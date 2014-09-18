@@ -1,0 +1,6 @@
+( )	Keyboard handler		[Jordi]
+( )	system_call_handler		[Jordi]
+( )	write				[Jordi]
+( )	errno				[Mario]
+( )	perrno				[Mario]
+( )	clock handler			[Mario]
