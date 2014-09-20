@@ -51,3 +51,15 @@
       movl %edx, %ds;           \
       movl %edx, %es
 
+#define RESTORE_ALL \
+      pop %gs; \
+      pop %fs; \
+      pop %es; \
+      pop %ds; \
+      pop %eax; \
+      pop %ebp; \
+      pop %edi; \
+      pop %esi; \
+      pop %edx; \
+      pop %ecx; \
+      pop %ebx;
