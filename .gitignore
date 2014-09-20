@@ -1,0 +1,10 @@
+*.bin
+*.o
+*.a
+*.lds
+*.out
+*.s
+build
+system
+user
+bootsect
