@@ -52,14 +52,26 @@
       movl %edx, %es
 
 #define RESTORE_ALL \
-      pop %gs; \
-      pop %fs; \
-      pop %es; \
-      pop %ds; \
-      pop %eax; \
-      pop %ebp; \
-      pop %edi; \
-      pop %esi; \
-      pop %edx; \
+      pop %ebx; \
       pop %ecx; \
-      pop %ebx;
+      pop %edx; \
+      pop %esi; \
+      pop %edi; \
+      pop %ebp; \
+      pop %eax; \
+      pop %ds; \
+      pop %es; \
+      pop %fs; \
+      pop %gs;
+
+
+#define EOI \
+      movb $0x20, %al; \
+      outb %al, $0x20 ;
+
+ENTRY(clock_handler)
+      SAVE_ALL
+      EOI
+      CALL clock_routine
+      RESTORE_ALL
+      IRET

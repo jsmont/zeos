@@ -79,11 +79,21 @@ void setIdt()
   /* Program interrups/exception service routines */
   idtR.base  = (DWord)idt;
   idtR.limit = IDT_ENTRIES * sizeof(Gate) - 1;
-  
+
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
 
+  setInterruptHandler(32, clock_handler, 0);
+
   set_idt_reg(&idtR);
 }
+
+void clock_routine() {
+  zeos_show_clock();
+}
+
+
+
+
 

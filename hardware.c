@@ -1,5 +1,5 @@
 /*
- * hardware.c 
+ * hardware.c
  */
 
 
@@ -80,7 +80,7 @@ void return_gate(Word ds, Word ss, DWord esp, Word cs, DWord eip)
  *    register 0x21:
  *    7 6 5 4 3 2 1 0
  *    x x x x x x x x
- *    
+ *
  *    bit 0 : Timer
  *    bit 1 : Keyboard
  *    bit 2 : PIC cascading
@@ -89,7 +89,7 @@ void return_gate(Word ds, Word ss, DWord esp, Word cs, DWord eip)
  *    bit 5 : Reserved
  *    bit 6 : Floppy disk
  *    bit 7 : Reserved
- * 
+ *
  *
  *   x = 0 -> enabled
  *   x = 1 -> disabled
@@ -103,7 +103,7 @@ __asm__ __volatile__(
   "call delay\n\t"
   "sti"
   : /*no output*/
-  : "i" (0xff)       /* 0xFF = 11111111 -> all bits disabled */
+  : "i" (0xfe)       /* 0xFE = 11111110 -> clock habilitado */
   : "%al" );
 }
 

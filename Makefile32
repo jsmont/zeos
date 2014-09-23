@@ -1,6 +1,4 @@
 # Makefile para poder compilar y ejecutar en entornos x64.
-# Si hardware.o se compila con optimización (-O1, -02...), al emular Zeos hay un error de 'General protection fault'.
-# Es recomendable, por lo tanto, compilar y ejecutar en el entorno de PROSO cada cierto tiempo.
 
 AS86    = as86 -0 -a
 LD86    = ld86 -0
@@ -75,7 +73,7 @@ system: system.o system.lds $(SYSOBJ)
 	$(LD) $(LINKFLAGS) $(SYSLDFLAGS) -o $@ $< $(SYSOBJ) $(LIBZEOS)
 
 hardware.o: hardware.c
-	gcc -m32 -O0  -g  -ffreestanding -Wall -Iinclude   -c -o hardware.o hardware.c
+	gcc -m32  -g  -ffreestanding -Wall -Iinclude   -c -o hardware.o hardware.c
 
 user: user.o user.lds $(USROBJ)
 	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -o $@ $< $(USROBJ)
