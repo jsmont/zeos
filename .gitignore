@@ -4,6 +4,7 @@
 *.lds
 *.out
 *.s
+*.txt
 build
 system
 user
