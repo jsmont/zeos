@@ -85,6 +85,8 @@ void setIdt()
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
 
   setInterruptHandler(32, clock_handler, 0);
+  setInterruptHandler(33, keyboard_handler, 0);
+  setTrapHandler(0x80, system_call_handler, 3);
 
   set_idt_reg(&idtR);
 }
@@ -93,6 +95,14 @@ void clock_routine() {
   zeos_show_clock();
 }
 
+void keyboard_routine()
+{
+    unsigned char c = inb(0x60);
+    if (!(c&0x80)) c = char_map[c&0x7f];
+    else return;
+    if (c) printc_xy(0,0,c);
+    else printc_xy(0,0,'C');
+}
 
 
 
