@@ -70,11 +70,11 @@
       outb %al, $0x20 ;
 
 ENTRY(clock_handler)
-      SAVE_ALL
-      EOI
-      CALL clock_routine
-      RESTORE_ALL
-      IRET
+      SAVE_ALL;
+      EOI;
+      CALL clock_routine;
+      RESTORE_ALL;
+      IRET;
 
 ENTRY(keyboard_handler)
   SAVE_ALL;
@@ -82,6 +82,7 @@ ENTRY(keyboard_handler)
   call keyboard_routine;
   RESTORE_ALL;
   iret;
+
 
 ENTRY(system_call_handler)
   SAVE_ALL;

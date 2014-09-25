@@ -9,7 +9,25 @@
 int errno;
 
 int write(int fd, char *buffer, int size) {
-  return -1;
+    int out;	
+    __asm__ (
+	"movl $4, %%eax;"
+    	"movl %1, %%ebx;"
+    	"movl %2, %%ecx;"
+    	"movl %3, %%edx;"
+    	"int $0x80;"
+	"movl %%eax, %0"
+	:"=r" (out)
+	:"r" (fd)
+ 	,"r" (buffer)
+	,"r" (size)
+	:"%ebx"
+	);
+	if(out<0) {
+	   errno = -out;
+	   out = -1;
+	}
+	return out;
 }
 
 void itoa(int a, char *b)

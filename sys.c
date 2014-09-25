@@ -52,8 +52,10 @@ int sys_write(int fd, char* buffer, int size)
     if (err < 0) return err;
     if (buffer == NULL) return -1;
     if (size < 0) return -1;
+    if (!access_ok(VERIFY_READ,buffer,size)) return -1;
     char nbuff[size];
     err = copy_from_user(buffer, nbuff, size);
     if (err < 0) return err;
+    
     return sys_write_console(nbuff, size);
 }

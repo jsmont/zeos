@@ -87,7 +87,6 @@ void setIdt()
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
   setTrapHandler(0x80, system_call_handler, 3);
-
   set_idt_reg(&idtR);
 }
 
