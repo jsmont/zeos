@@ -1,7 +1,6 @@
 #ifndef ERRNO_H
 #define ERRNO_H
 
-
 #define EPERM        1
 #define ENOENT       2
 #define ESRCH        3
@@ -38,5 +37,9 @@
 #define ERANGE      34
 
 extern int errno;
+
+void seterrno(int val);
+
+int geterrno();
 
 #endif

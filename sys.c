@@ -15,13 +15,11 @@
 
 #include <errno.h>
 
-int errno;
-
 #define LECTURA 0
 #define ESCRIPTURA 1
 
-int check_fd(int fd, int permissions)
-{
+ int check_fd(int fd, int permissions)
+ {
   if (fd!=1) return -9; /*EBADF*/
   if (permissions!=ESCRIPTURA) return -13; /*EACCES*/
   return 0;
@@ -56,15 +54,15 @@ int sys_write(int fd, char* buffer, int size)
     int err = check_fd(fd, ESCRIPTURA);
     if (err < 0) return err;
     if (buffer == NULL) {
-      errno=(EFAULT);
+      seterrno(EFAULT);
       return -EFAULT;
-    }
-    if (size < 0) {
-      errno=(EINVAL);
+  }
+  if (size < 0) {
+      seterrno(EINVAL);
       return -EINVAL;
-    }
-    if (!access_ok(VERIFY_READ,buffer,size)) return -1;
-    if(size>256) {
+  }
+  if (!access_ok(VERIFY_READ,buffer,size)) return -1;
+  if(size>256) {
       char nbuff[256];
       while(size>256) {
         err = copy_from_user(buffer, &nbuff, 256);
@@ -72,11 +70,11 @@ int sys_write(int fd, char* buffer, int size)
         size-=256;
         buffer+=256;
         written+=sys_write_console(nbuff, 256);
-      }
     }
-    char nbuff[size];
-    err = copy_from_user(buffer, &nbuff, size);
-    if (err < 0) return err;
-    written+=sys_write_console(nbuff, size);
-    return written;
+}
+char nbuff[size];
+err = copy_from_user(buffer, &nbuff, size);
+if (err < 0) return err;
+written+=sys_write_console(nbuff, size);
+return written;
 }
