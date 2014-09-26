@@ -57,11 +57,11 @@ int sys_write(int fd, char* buffer, int size)
     if (err < 0) return err;
     if (buffer == NULL) {
       errno=(EFAULT);
-      return -1;
+      return -EFAULT;
     }
     if (size < 0) {
       errno=(EINVAL);
-      return -1;
+      return -EINVAL;
     }
     if (!access_ok(VERIFY_READ,buffer,size)) return -1;
     if(size>256) {
