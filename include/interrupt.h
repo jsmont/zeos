@@ -21,4 +21,8 @@ void clock_routine();
 
 void clock_handler();
 
+void system_call_handler();
+
+void keyboard_handler();
+
 #endif  /* __INTERRUPT_H__ */
