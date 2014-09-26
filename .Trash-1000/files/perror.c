@@ -1,7 +1,5 @@
 #include <perror.h>
 
-extern int errno;
-
 /* http://www.virtsync.com/c-error-codes-include-errno */
 char * errorCodes[34] = {
     "Operation not permitted",
@@ -41,9 +39,11 @@ char * errorCodes[34] = {
 };
 
 void perror(char *str) {
-    write(1, str, strlen(str));
-    char *separador = ":";
-    write(1, separador, strlen(separador));
+    if(strlen(str)>0) {
+        write(1, str, strlen(str));
+        char *separador = ":";
+        write(1, separador, strlen(separador));
+    }
     char * errorMessage;
     errorMessage = errorCodes[errno];
     write(1, errorMessage, strlen(errorMessage));

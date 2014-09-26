@@ -13,6 +13,10 @@
 
 #include <sched.h>
 
+#include <errno.h>
+
+int errno;
+
 #define LECTURA 0
 #define ESCRIPTURA 1
 
@@ -38,24 +42,41 @@ int sys_fork()
   int PID=-1;
 
   // creates the child process
-  
+
   return PID;
 }
 
 void sys_exit()
-{  
+{
 }
 
 int sys_write(int fd, char* buffer, int size)
 {
+    int written = 0;
     int err = check_fd(fd, ESCRIPTURA);
     if (err < 0) return err;
-    if (buffer == NULL) return -1;
-    if (size < 0) return -1;
+    if (buffer == NULL) {
+      errno=(EFAULT);
+      return -1;
+    }
+    if (size < 0) {
+      errno=(EINVAL);
+      return -1;
+    }
     if (!access_ok(VERIFY_READ,buffer,size)) return -1;
+    if(size>256) {
+      char nbuff[256];
+      while(size>256) {
+        err = copy_from_user(buffer, &nbuff, 256);
+        if (err < 0) return err;
+        size-=256;
+        buffer+=256;
+        written+=sys_write_console(nbuff, 256);
+      }
+    }
     char nbuff[size];
-    err = copy_from_user(buffer, nbuff, size);
+    err = copy_from_user(buffer, &nbuff, size);
     if (err < 0) return err;
-    
-    return sys_write_console(nbuff, size);
+    written+=sys_write_console(nbuff, size);
+    return written;
 }
