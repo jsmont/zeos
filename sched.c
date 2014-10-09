@@ -6,6 +6,9 @@
 #include <mm.h>
 #include <io.h>
 
+struct list_head freequeue;
+init_freequeue();
+
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
  * to protect against out of bound accesses.
@@ -26,25 +29,25 @@ extern struct list_head blocked;
 
 
 /* get_DIR - Returns the Page Directory address for task 't' */
-page_table_entry * get_DIR (struct task_struct *t) 
+page_table_entry * get_DIR (struct task_struct *t)
 {
 	return t->dir_pages_baseAddr;
 }
 
 /* get_PT - Returns the Page Table address for task 't' */
-page_table_entry * get_PT (struct task_struct *t) 
+page_table_entry * get_PT (struct task_struct *t)
 {
 	return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
 
 
-int allocate_DIR(struct task_struct *t) 
+int allocate_DIR(struct task_struct *t)
 {
 	int pos;
 
 	pos = ((int)t-(int)task)/sizeof(union task_union);
 
-	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
+	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos];
 
 	return 1;
 }
@@ -59,9 +62,18 @@ void cpu_idle(void)
 	}
 }
 
+void init_freequeue() {
+    INIT_LIST_HEAD( &freequeue );
+    for(int i=0; i<NR_TASKS ; ++i) {
+        list_add(&task[i].task_struct.list, &freequeue );
+    }
+}
+
 void init_idle (void)
 {
-
+    struct list_head * e = list_first( &freequeue );
+    e.PID = 0;
+    allocate_DIR(e);
 }
 
 void init_task1(void)
@@ -76,7 +88,7 @@ void init_sched(){
 struct task_struct* current()
 {
   int ret_value;
-  
+
   __asm__ __volatile__(
   	"movl %%esp, %0"
 	: "=g" (ret_value)

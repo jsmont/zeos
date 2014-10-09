@@ -12,11 +12,15 @@
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
 
+struct list_head freequeue;
+struct list_head readyqueue;
+
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
 struct task_struct {
   int PID;			/* Process ID */
   page_table_entry * dir_pages_baseAddr;
+  struct list_head list;
 };
 
 union task_union {
@@ -27,6 +31,7 @@ union task_union {
 extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
+extern struct task_struct *init_task;
 
 
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
@@ -35,6 +40,8 @@ extern struct task_struct *idle_task;
 
 /* Inicialitza les dades del proces inicial */
 void init_task1(void);
+
+void init_freequeue(void);
 
 void init_idle(void);
 
