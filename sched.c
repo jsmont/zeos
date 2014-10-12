@@ -7,7 +7,6 @@
 #include <io.h>
 
 struct list_head freequeue;
-init_freequeue();
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -18,12 +17,10 @@ union task_union protected_tasks[NR_TASKS+2]
 
 union task_union *task = &protected_tasks[1]; /* task array */
 
-#if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
   return list_entry( l, struct task_struct, list);
 }
-#endif
 
 extern struct list_head blocked;
 
@@ -64,16 +61,18 @@ void cpu_idle(void)
 
 void init_freequeue() {
     INIT_LIST_HEAD( &freequeue );
-    for(int i=0; i<NR_TASKS ; ++i) {
-        list_add(&task[i].task_struct.list, &freequeue );
+    int i;
+    for(i=0; i<NR_TASKS ; ++i) {
+        list_add(&task[i].task.list, &freequeue );
     }
 }
 
 void init_idle (void)
 {
     struct list_head * e = list_first( &freequeue );
-    e.PID = 0;
-    allocate_DIR(e);
+    struct task_struct * t = list_head_to_task_struct(e);
+    t->PID = 0;
+    allocate_DIR(t);
 }
 
 void init_task1(void)
@@ -94,5 +93,19 @@ struct task_struct* current()
 	: "=g" (ret_value)
   );
   return (struct task_struct*)(ret_value&0xfffff000);
+}
+
+void task_switch(union task_union* new) {
+   __asm__ ("pushl %esi\n\t"
+             "pushl %edx\n\t"
+             "pushl %ebx");
+   inner_task_switch(new);
+   __asm__ ("popl %ebx\n\t"
+             "popl %edi\n\t"
+             "popl %esi");
+}
+
+void inner_task_switch(union task_union* new) {
+
 }
 
