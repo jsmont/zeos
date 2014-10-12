@@ -105,7 +105,25 @@ void task_switch(union task_union* new) {
              "popl %esi");
 }
 
-void inner_task_switch(union task_union* new) {
-
+void inner_task_switch(union task_union* t) {
+  // PÀG. 49 Documentacio.pdf, PÀG. 30 Slide tema 4.pdf
+  struct task_struct * actualTask = current();
+  __asm__ (
+    "pushl %ebp\n\t"
+    "movl %esp, %ebp"
+  );
+  int ebp;
+  __asm__(
+    "movl %%ebp, %0" :
+    "=r" (ebp)
+  );
+  actualTask->kernel_esp = ebp;
+  struct task_struct * newTask = &(t->task);
+  tss.esp0 = newTask->kernel_esp;
+  set_cr3(get_DIR(newTask));
+  __asm__(
+    "popl %ebp\n\t"
+    "ret"
+  );
 }
 
