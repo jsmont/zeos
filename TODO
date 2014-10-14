@@ -1,6 +1,20 @@
-( )	Keyboard handler		[Jordi]
-( )	system_call_handler		[Jordi]
-( )	write				[Jordi]
-( )	errno				[Mario]
-( )	perrno				[Mario]
-( )	clock handler			[Mario]
+(X) Keyboard handler        [Jordi]
+(X) system_call_handler     [Jordi]
+(X) write                   [Jordi]
+(X) errno                   [Mario]
+(X) perrno                  [Mario]
+(X) clock handler           [Mario]
+
+(X) E1.check
+
+( ) Adapt the task_struct definition
+( ) Initialize a free queue.
+( ) Initialize a ready queue.
+( ) Implement the initial processes initialization.
+( ) Implement the task_switch function.
+( ) Implement the inner_task_switch function.
+( ) Implement the getpid system call.
+( ) Implement the fork system call.
+( ) Implement process scheduling.
+( ) Implement the exit system call.
+( ) Implement the getstats system call.

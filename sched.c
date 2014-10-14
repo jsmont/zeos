@@ -6,7 +6,7 @@
 #include <mm.h>
 #include <io.h>
 
-struct list_head freequeue;
+struct task_struct *idle_task;
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -73,10 +73,21 @@ void init_idle (void)
     struct task_struct * t = list_head_to_task_struct(e);
     t->PID = 0;
     allocate_DIR(t);
+
+    union task_union * tu = (union task_union *) t;
+    tu->stack[KERNEL_STACK_SIZE-2] = 0;
+    tu->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
+
+    t->kernel_esp = (int) & (tu->stack[KERNEL_STACK_SIZE-2]);
+
+    idle_task = t;
+
+    list_del(e);
 }
 
 void init_task1(void)
 {
+
 }
 
 

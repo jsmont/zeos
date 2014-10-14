@@ -21,7 +21,7 @@ struct task_struct {
   int PID;			/* Process ID */
   page_table_entry * dir_pages_baseAddr;
   struct list_head list;
-  int kernel_esp;
+  unsigned int kernel_esp;
 };
 
 union task_union {
