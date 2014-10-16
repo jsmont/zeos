@@ -12,7 +12,7 @@
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
-// TEST TASK_SWITCH FUNCIONA
+// TEST TASK_SWITCH + GETPID FUNCIONA
 union task_union * tu;
 
 char char_map[] =
@@ -97,7 +97,7 @@ void clock_routine() {
   zeos_show_clock();
 }
 
-// TEST TASK_SWITCH FUNCIONA
+// TEST TASK_SWITCH + GETPID FUNCIONA
 #define IDLE 0
 #define INIT 1
 int ejecutandose = INIT;
@@ -108,7 +108,7 @@ void keyboard_routine()
     if (!(c&0x80)) c = char_map[c&0x7f];
     else return;
     if (c) {
-      // TEST TASK_SWITCH FUNCIONA
+      // TEST TASK_SWITCH + GETPID FUNCIONA
       if(ejecutandose==INIT)
         tu = (union task_union *) idle_task;
       else
@@ -121,7 +121,6 @@ void keyboard_routine()
       printc_xy(0,0,'C');
     }
 }
-
 
 
 

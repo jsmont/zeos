@@ -25,4 +25,6 @@ void system_call_handler();
 
 void keyboard_handler();
 
+void getpid_handler();
+
 #endif  /* __INTERRUPT_H__ */

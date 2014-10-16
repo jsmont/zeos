@@ -56,10 +56,14 @@ void cpu_idle(void)
 
     while(1)
     {
-        // TEST TASK_SWITCH FUNCIONA
-        char * chivato = "\nejecutando task idle\n";
+        // TEST TASK_SWITCH + GETPID FUNCIONA
+        char * chivato = "\nejecutando task idle. pid: ";
         printk(chivato);
-    ;
+        char buffer[1];
+        itoa( (struct task_struct *)current()->PID, buffer);
+        printk(buffer);
+        chivato = "\n";
+        printk(chivato);
     }
 }
 

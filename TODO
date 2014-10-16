@@ -13,7 +13,7 @@
 (X) Implement the initial processes initialization.
 (X) Implement the task_switch function.
 (X) Implement the inner_task_switch function.
-( ) Implement the getpid system call.
+(X) Implement the getpid system call.
 ( ) Implement the fork system call.
 ( ) Implement process scheduling.
 ( ) Implement the exit system call.

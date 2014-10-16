@@ -80,6 +80,18 @@ int write(int fd, char *buffer, int size) {
     return out;
 }
 
+int getpid() {
+    int out;
+    __asm__ (
+        "movl $20, %%eax;"
+        "int $0x80;"
+        "movl %%eax, %0"
+        :"=r" (out)
+        ::"%eax"
+        );
+    return out;
+}
+
 void itoa(int a, char *b)
 {
     int i, i1;
