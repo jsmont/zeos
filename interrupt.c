@@ -12,6 +12,9 @@
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
+// TEST TASK_SWITCH FUNCIONA
+union task_union * tu;
+
 char char_map[] =
 {
   '\0','\0','1','2','3','4','5','6',
@@ -94,13 +97,29 @@ void clock_routine() {
   zeos_show_clock();
 }
 
+// TEST TASK_SWITCH FUNCIONA
+#define IDLE 0
+#define INIT 1
+int ejecutandose = INIT;
+
 void keyboard_routine()
 {
     unsigned char c = inb(0x60);
     if (!(c&0x80)) c = char_map[c&0x7f];
     else return;
-    if (c) printc_xy(0,0,c);
-    else printc_xy(0,0,'C');
+    if (c) {
+      // TEST TASK_SWITCH FUNCIONA
+      if(ejecutandose==INIT)
+        tu = (union task_union *) idle_task;
+      else
+        tu = (union task_union *) init_task;
+      ejecutandose = !ejecutandose;
+      task_switch(tu);
+
+      //printc_xy(0,0,c);
+    }else{
+      printc_xy(0,0,'C');
+    }
 }
 
 
