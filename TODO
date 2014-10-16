@@ -7,12 +7,12 @@
 
 (X) E1.check
 
-( ) Adapt the task_struct definition
-( ) Initialize a free queue.
+(X) Adapt the task_struct definition
+(X) Initialize a free queue.
 ( ) Initialize a ready queue.
-( ) Implement the initial processes initialization.
-( ) Implement the task_switch function.
-( ) Implement the inner_task_switch function.
+(X) Implement the initial processes initialization.
+(X) Implement the task_switch function.
+(X) Implement the inner_task_switch function.
 ( ) Implement the getpid system call.
 ( ) Implement the fork system call.
 ( ) Implement process scheduling.
