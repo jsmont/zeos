@@ -64,7 +64,6 @@
       pop %fs; \
       pop %gs;
 
-
 #define EOI \
       movb $0x20, %al; \
       outb %al, $0x20 ;

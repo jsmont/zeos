@@ -18,6 +18,8 @@
 #define LECTURA 0
 #define ESCRIPTURA 1
 
+ int pids = 2; // next PID to use
+
  int check_fd(int fd, int permissions)
  {
   if (fd!=1) return -9; /*EBADF*/
@@ -39,7 +41,44 @@ int sys_fork()
 {
   int PID=-1;
 
-  // creates the child process
+  if(list_empty(&freequeue))
+    return -1; // no hay espacio para contener nuevo proceso
+
+  struct task_struct * actualTask = current();
+  union task_union * actualUnion = (union task_union *) actualTask;
+
+  struct list_head * e = list_first( &freequeue );
+  struct task_struct * childTask = list_head_to_task_struct(e);
+
+  union task_union * childUnion = (union task_union *) childTask;
+
+  childUnion->task = actualUnion->task;
+
+  int pag;
+  int new_ph_pag;
+  int ph_pages[NUM_PAG_DATA];
+  for (pag=0;pag<NUM_PAG_DATA;pag++){
+    new_ph_pag=alloc_frame();
+    if(new_ph_pag==-1)
+      return -1; // error no hay physical pages disponibles
+    else
+      ph_pages[pag] = new_ph_pag;
+  }
+
+  page_table_entry * childPT = get_PT(childTask);
+  page_table_entry * parentPT = get_PT(actualTask);
+
+  for (pag=0;pag<NUM_PAG_CODE;pag++){
+    childPT[pag].entry = 0;
+    childPT[pag].bits.pbase_addr = parentPT[pag].bits.pbase_addr;
+    childPT[pag].bits.user = 1;
+    childPT[pag].bits.present = 1;
+  }
+
+  // hasta aquí transpa 48
+
+  childTask->PID = pids;
+  ++pids;
 
   return PID;
 }
