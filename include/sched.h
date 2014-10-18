@@ -22,6 +22,7 @@ struct task_struct {
   page_table_entry * dir_pages_baseAddr;
   struct list_head list;
   unsigned int kernel_esp;
+  unsigned int quantum;
 };
 
 union task_union {
@@ -33,6 +34,8 @@ extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
 extern struct task_struct *init_task;
+
+extern unsigned int tics;
 
 
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
@@ -69,5 +72,7 @@ void sched_next_rr();
 void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
+
+void schedule();
 
 #endif  /* __SCHED_H__ */

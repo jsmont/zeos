@@ -9,6 +9,8 @@
 struct task_struct *idle_task;
 struct task_struct *init_task;
 
+unsigned int tics = 0;
+
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
  * to protect against out of bound accesses.
@@ -24,7 +26,6 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 }
 
 extern struct list_head blocked;
-
 
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t)
@@ -84,6 +85,7 @@ void init_idle (void)
     struct list_head * e = list_first( &freequeue );
     struct task_struct * t = list_head_to_task_struct(e);
     t->PID = 0;
+    t->quantum = 1;
     allocate_DIR(t);
 
     union task_union * tu = (union task_union *) t;
@@ -102,6 +104,7 @@ void init_task1(void)
     struct list_head * e = list_first( &freequeue );
     struct task_struct * t = list_head_to_task_struct(e);
     t->PID = 1;
+    t->quantum = 10;
     allocate_DIR(t);
     set_user_pages(t);
     union task_union * tu = (union task_union *) t;
@@ -113,9 +116,10 @@ void init_task1(void)
     list_del(e);
 }
 
-
 void init_sched(){
-
+    tics = 1;
+    init_freequeue();
+    init_readyqueue();
 }
 
 struct task_struct* current()
@@ -166,3 +170,40 @@ void inner_task_switch(union task_union* t) {
     );
 }
 
+void sched_next_rr() {
+    struct list_head * e = list_first( &readyqueue );
+    struct task_struct * t = list_head_to_task_struct(e);
+    update_process_state_rr(t,NULL);
+    tics = t->quantum;
+    task_switch(t);
+}
+
+void update_process_state_rr(struct task_struct *t, struct list_head *dest) {
+    if(dest==NULL) {
+        list_del(&t->list);
+    }else{
+        list_add_tail(&t->list, dest);
+    }
+}
+
+int needs_sched_rr() {
+    if(tics==0 && !list_empty(&readyqueue))
+        return 1;
+    return 0;
+}
+
+void update_sched_data_rr() {
+    tics--;
+}
+
+void schedule() {
+    update_sched_data_rr();
+    if(needs_sched_rr()) {
+        struct task_struct * oldT = current();
+        if(oldT->PID > 0)
+            update_process_state_rr(oldT,&readyqueue);
+        sched_next_rr();
+    }else if(tics==0){
+        tics = current()->quantum;
+    }
+}

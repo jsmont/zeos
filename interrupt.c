@@ -94,6 +94,7 @@ void setIdt()
 }
 
 void clock_routine() {
+  schedule();
   zeos_show_clock();
 }
 
