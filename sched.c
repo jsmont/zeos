@@ -75,6 +75,10 @@ void init_freequeue() {
     }
 }
 
+void init_readyqueue() {
+    INIT_LIST_HEAD( &readyqueue );
+}
+
 void init_idle (void)
 {
     struct list_head * e = list_first( &freequeue );

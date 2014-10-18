@@ -9,12 +9,12 @@
 
 (X) Adapt the task_struct definition
 (X) Initialize a free queue.
-( ) Initialize a ready queue.
+(X) Initialize a ready queue.
 (X) Implement the initial processes initialization.
 (X) Implement the task_switch function.
 (X) Implement the inner_task_switch function.
 (X) Implement the getpid system call.
-( ) Implement the fork system call.
+(X) Implement the fork system call.
 ( ) Implement process scheduling.
 ( ) Implement the exit system call.
 ( ) Implement the getstats system call.

@@ -88,6 +88,7 @@ int __attribute__((__section__(".text.main")))
   init_sched();
 
   init_freequeue();
+  init_readyqueue();
   /* Initialize idle task  data */
   init_idle();
   /* Initialize task 1 data */
