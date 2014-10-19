@@ -60,6 +60,7 @@ int ret_from_fork() {
 }
 
 int sys_fork() {
+
     //  Get a free task_struct for the process. If there is no space for a new process,
     //  an error will be returned.
 
@@ -93,19 +94,12 @@ int sys_fork() {
     int new_ph_pag;
     int ph_pages[NUM_PAG_DATA];
     for (pag=0;pag<NUM_PAG_DATA;pag++){
-        new_ph_pag=alloc_frame();
-        if(new_ph_pag==-1) {
-            int i;
-            for (i = pag-1; i >= 0; --i) {
-                free_frame(ph_pages[i]);
-            }
-          return -1;
-        }else {
-          ph_pages[pag] = new_ph_pag;
-        }
+    new_ph_pag=alloc_frame();
+    if(new_ph_pag==-1)
+      return -1; // error no hay physical pages disponibles. pendiente liberarlas??
+    else
+      ph_pages[pag] = new_ph_pag;
     }
-
-
 
     //  Inherit user data:
     //
@@ -131,7 +125,11 @@ int sys_fork() {
     //          which hold this region
 
     for (pag=0; pag<NUM_PAG_DATA; pag++) {
-        set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
+        childPT[NUM_PAG_KERNEL+NUM_PAG_CODE+pag].entry = 0;
+        childPT[NUM_PAG_KERNEL+NUM_PAG_CODE+pag].bits.pbase_addr = ph_pages[pag];
+        childPT[NUM_PAG_KERNEL+NUM_PAG_CODE+pag].bits.user = 1;
+        childPT[NUM_PAG_KERNEL+NUM_PAG_CODE+pag].bits.rw = 1;
+        childPT[NUM_PAG_KERNEL+NUM_PAG_CODE+pag].bits.present = 1;
     }
 
     //  Copy the user data+stack pages from the parent process to the child process. The
@@ -151,17 +149,13 @@ int sys_fork() {
 
     for (pag=0; pag<NUM_PAG_DATA; pag++) {
         set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag, ph_pages[pag]);
-        copy_data(
-            (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)<<12,
-            (NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag)<<12,
-            PAGE_SIZE
-        );
+        unsigned int physicalDataFrameParent = get_frame(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag);
+        unsigned int physicalDataFrameChild = get_frame(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag);
+        copy_data(physicalDataFrameParent, physicalDataFrameChild, PAGE_SIZE);
         del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag);
     }
 
-    set_cr3(actualTask->dir_pages_baseAddr);
-
-
+    set_cr3(parentPT);
 
     // Assign a new PID to the process. The PID must be different from its position in the
     // task_array table.

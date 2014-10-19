@@ -80,6 +80,13 @@ int write(int fd, char *buffer, int size) {
     return out;
 }
 
+void exit() {
+    __asm__ (
+        "movl $1, %eax;"
+        "int $0x80;"
+    );
+}
+
 int fork() {
     int out;
     __asm__ (
@@ -101,6 +108,22 @@ int getpid() {
         :"=r" (out)
         ::"%eax"
         );
+    return out;
+}
+
+int get_stats(int pid, struct stats * s) {
+    int out;
+    __asm__ (
+        "movl $35, %%eax;"
+        "movl %1, %%ebx;"
+        "movl %2, %%ecx;"
+        "int $0x80;"
+        "movl %%eax, %0"
+        :"=r" (out)
+        :"r" (pid)
+        ,"r" (s)
+        :"%eax"
+    );
     return out;
 }
 

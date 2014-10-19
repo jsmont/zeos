@@ -7,6 +7,7 @@
 
 #include <list.h>
 #include <types.h>
+#include <stats.h>
 #include <mm_address.h>
 
 #define NR_TASKS      10
@@ -23,6 +24,7 @@ struct task_struct {
   struct list_head list;
   unsigned int kernel_esp;
   unsigned int quantum;
+  struct stats statistics;
 };
 
 union task_union {
@@ -74,5 +76,13 @@ int needs_sched_rr();
 void update_sched_data_rr();
 
 void schedule();
+
+int get_quantum (struct task_struct *t);
+void set_quantum (struct task_struct *t, int new_quantum);
+
+void update_stats_user_to_system();
+void update_stats_system_to_user();
+void update_stats_system_to_ready();
+void update_stats_ready_to_system();
 
 #endif  /* __SCHED_H__ */

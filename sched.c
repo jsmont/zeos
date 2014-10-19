@@ -5,6 +5,7 @@
 #include <sched.h>
 #include <mm.h>
 #include <io.h>
+#include <stats.h>
 
 struct task_struct *idle_task;
 struct task_struct *init_task;
@@ -57,14 +58,14 @@ void cpu_idle(void)
 
     while(1)
     {
-        // TEST TASK_SWITCH + GETPID FUNCIONA
+        /* TEST TASK_SWITCH + GETPID FUNCIONA
         char * chivato = "\nejecutando task idle. pid: ";
         printk(chivato);
         char buffer[1];
         itoa( (struct task_struct *)current()->PID, buffer);
         printk(buffer);
         chivato = "\n";
-        printk(chivato);
+        printk(chivato);*/
     }
 }
 
@@ -85,7 +86,6 @@ void init_idle (void)
     struct list_head * e = list_first( &freequeue );
     struct task_struct * t = list_head_to_task_struct(e);
     t->PID = 0;
-    t->quantum = 1;
     allocate_DIR(t);
 
     union task_union * tu = (union task_union *) t;
@@ -95,6 +95,7 @@ void init_idle (void)
     t->kernel_esp = (unsigned int) & (tu->stack[KERNEL_STACK_SIZE-2]);
 
     idle_task = t;
+    set_quantum(idle_task,1);
 
     list_del(e);
 }
@@ -104,7 +105,6 @@ void init_task1(void)
     struct list_head * e = list_first( &freequeue );
     struct task_struct * t = list_head_to_task_struct(e);
     t->PID = 1;
-    t->quantum = 10;
     allocate_DIR(t);
     set_user_pages(t);
     union task_union * tu = (union task_union *) t;
@@ -112,6 +112,7 @@ void init_task1(void)
     set_cr3(get_DIR(t));
 
     init_task = t;
+    set_quantum(init_task,10);
 
     list_del(e);
 }
@@ -174,7 +175,8 @@ void sched_next_rr() {
     struct list_head * e = list_first( &readyqueue );
     struct task_struct * t = list_head_to_task_struct(e);
     update_process_state_rr(t,NULL);
-    tics = t->quantum;
+    update_stats_ready_to_system(t);
+    tics = get_quantum(t);
     task_switch(t);
 }
 
@@ -204,6 +206,42 @@ void schedule() {
             update_process_state_rr(oldT,&readyqueue);
         sched_next_rr();
     }else if(tics==0){
-        tics = current()->quantum;
+        tics = get_quantum(current());
     }
+}
+
+int get_quantum (struct task_struct *t) {
+    return t->quantum;
+}
+
+void set_quantum (struct task_struct *t, int new_quantum) {
+    t->quantum = new_quantum;
+}
+
+void update_stats_user_to_system() {
+    struct stats * actualStats = &(current()->statistics);
+    actualStats->user_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+    actualStats->elapsed_total_ticks = get_ticks();
+}
+
+void update_stats_system_to_user() {
+    struct stats * actualStats = &(current()->statistics);
+    actualStats->system_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+    actualStats->elapsed_total_ticks = get_ticks();
+}
+
+void update_stats_system_to_ready() {
+    struct stats * actualStats = &(current()->statistics);
+    actualStats->user_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+    actualStats->elapsed_total_ticks = get_ticks();
+}
+
+void update_stats_ready_to_system(struct task_struct * t) {
+    struct stats * actualStats = &(t->statistics);
+    actualStats->user_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+    actualStats->elapsed_total_ticks = get_ticks();
+}
+
+void get_stats() {
+
 }
