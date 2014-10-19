@@ -5,6 +5,7 @@
 *.out
 *.s
 *.txt
+*.Trash-*
 build
 system
 user
