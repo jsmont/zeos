@@ -120,19 +120,22 @@ int sys_fork() {
     page_table_entry * parentPT = get_PT(actualTask);
 
     for (pag=NUM_PAG_KERNEL;pag<NUM_PAG_KERNEL+NUM_PAG_CODE;pag++){
-        childPT[pag].entry = 0;
+        /*childPT[pag].entry = 0;
         childPT[pag].bits.pbase_addr = parentPT[pag].bits.pbase_addr;
         childPT[pag].bits.user = 1;
-        childPT[pag].bits.present = 1;
+        childPT[pag].bits.present = 1;*/
+        set_ss_pag(childPT, pag, get_frame(parentPT, pag));
     }
+
+
 
     //
     //          Page table entries for the user data+stack have to point to new allocated pages
     //          which hold this region
 
-    for (pag=0; pag<NUM_PAG_DATA; pag++) {
+    /*for (pag=0; pag<NUM_PAG_DATA; pag++) {
         set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
-    }
+    }*/
 
     //  Copy the user data+stack pages from the parent process to the child process. The
     //  child’s physical pages cannot be directly accessed because they are not mapped in
@@ -150,10 +153,11 @@ int sys_fork() {
     //      parent process to access the child pages.
 
     for (pag=0; pag<NUM_PAG_DATA; pag++) {
+        set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
         set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag, ph_pages[pag]);
         copy_data(
-            (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)<<12,
-            (NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag)<<12,
+            (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)*PAGE_SIZE,
+            (NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag)*PAGE_SIZE,
             PAGE_SIZE
         );
         del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag);
@@ -202,10 +206,9 @@ int sys_fork() {
     //  Insert the new process into the ready list: readyqueue. This list will contain all processes
     //  that are ready to execute but there is no processor to run them.
 
-    list_add_tail(&childTask->list,&readyqueue);
+    list_add_tail(&(childTask->list),&readyqueue);
 
     // Return the pid of the child process.
-
     return childTask->PID;
 }
 
