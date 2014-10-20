@@ -29,6 +29,8 @@
 
 int sys_ni_syscall()
 {
+    update_stats_user_to_system();
+    update_stats_system_to_user(current());
 	return -38; /*ENOSYS*/
 }
 
@@ -199,6 +201,8 @@ int sys_fork() {
 
     list_add_tail(&(childTask->list),&readyqueue);
 
+    reset_stats(childTask);
+
     // Return the pid of the child process.
     return childTask->PID;
 }
@@ -208,8 +212,7 @@ void sys_exit() {
 
     free_user_pages(actualTask);
 
-    update_process_state_rr(actualTask,&freequeue);
-    sched_next_rr();
+    schedule_from_exit();
 }
 
 int sys_write(int fd, char* buffer, int size)

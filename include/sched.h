@@ -66,6 +66,7 @@ page_table_entry * get_PT (struct task_struct *t) ;
 page_table_entry * get_DIR (struct task_struct *t) ;
 
 /* Headers for the scheduling policy */
+void schedule_from_exit();
 void sched_next_rr();
 void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
@@ -80,5 +81,7 @@ void update_stats_user_to_system();
 void update_stats_system_to_user();
 void update_stats_system_to_ready();
 void update_stats_ready_to_system();
+
+void reset_stats(struct task_struct *t);
 
 #endif  /* __SCHED_H__ */
