@@ -10,7 +10,7 @@
 struct task_struct *idle_task;
 struct task_struct *init_task;
 
-unsigned int tics = 0;
+unsigned int tics;
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -58,69 +58,62 @@ void cpu_idle(void)
 
     while(1)
     {
-        /* TEST TASK_SWITCH + GETPID FUNCIONA
+        // TEST TASK_SWITCH + GETPID FUNCIONA
         char * chivato = "\nejecutando task idle. pid: ";
         printk(chivato);
         char buffer[1];
         itoa( (struct task_struct *)current()->PID, buffer);
         printk(buffer);
         chivato = "\n";
-        printk(chivato);*/
+        printk(chivato);
     }
-}
-
-void init_freequeue() {
-    INIT_LIST_HEAD( &freequeue );
-    int i;
-    for(i=0; i<NR_TASKS ; ++i) {
-        list_add(&task[i].task.list, &freequeue );
-    }
-}
-
-void init_readyqueue() {
-    INIT_LIST_HEAD( &readyqueue );
 }
 
 void init_idle (void)
 {
     struct list_head * e = list_first( &freequeue );
-    struct task_struct * t = list_head_to_task_struct(e);
-    t->PID = 0;
-    allocate_DIR(t);
+    struct task_struct * idle_task = list_head_to_task_struct(e);
+    list_del(e);
+    idle_task->PID = 0;
+    allocate_DIR(idle_task);
 
-    union task_union * tu = (union task_union *) t;
+    union task_union * tu = (union task_union *) idle_task;
     tu->stack[KERNEL_STACK_SIZE-2] = 0;
     tu->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
 
-    t->kernel_esp = (unsigned int) & (tu->stack[KERNEL_STACK_SIZE-2]);
+    idle_task->kernel_esp = (unsigned int) & (tu->stack[KERNEL_STACK_SIZE-2]);
 
-    idle_task = t;
     set_quantum(idle_task,1);
-
-    list_del(e);
 }
 
 void init_task1(void)
 {
     struct list_head * e = list_first( &freequeue );
-    struct task_struct * t = list_head_to_task_struct(e);
-    t->PID = 1;
-    allocate_DIR(t);
-    set_user_pages(t);
-    union task_union * tu = (union task_union *) t;
-    tss.esp0 = &(tu->stack[KERNEL_STACK_SIZE]);
-    set_cr3(get_DIR(t));
-
-    init_task = t;
-    set_quantum(init_task,10);
-
+    struct task_struct * init_task = list_head_to_task_struct(e);
     list_del(e);
+
+    init_task->PID = 1;
+
+    allocate_DIR(init_task);
+    set_user_pages(init_task);
+
+    union task_union * tu = (union task_union *) init_task;
+
+    tss.esp0 = &(tu->stack[KERNEL_STACK_SIZE]);
+    set_cr3(get_DIR(init_task));
+
+    set_quantum(init_task,10);
 }
 
 void init_sched(){
     tics = 1;
-    init_freequeue();
-    init_readyqueue();
+    INIT_LIST_HEAD( &freequeue );
+    int i;
+    for(i=0; i<NR_TASKS ; ++i) {
+        list_add(&task[i].task.list, &freequeue );
+    }
+
+    INIT_LIST_HEAD( &readyqueue );
 }
 
 struct task_struct* current()
@@ -175,7 +168,7 @@ void sched_next_rr() {
     struct list_head * e = list_first( &readyqueue );
     struct task_struct * t = list_head_to_task_struct(e);
     update_process_state_rr(t,NULL);
-    update_stats_ready_to_system(t);
+    //update_stats_ready_to_system(t);
     tics = get_quantum(t);
     task_switch(t);
 }
@@ -195,7 +188,8 @@ int needs_sched_rr() {
 }
 
 void update_sched_data_rr() {
-    tics--;
+    if(tics>0)
+        tics--;
 }
 
 void schedule() {

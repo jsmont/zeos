@@ -115,7 +115,7 @@ void keyboard_routine()
       else
         tu = (union task_union *) init_task;
       ejecutandose = !ejecutandose;
-      task_switch(tu);
+      //task_switch(tu);
 
       //printc_xy(0,0,c);
     }else{

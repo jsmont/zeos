@@ -47,10 +47,6 @@ extern unsigned int tics;
 /* Inicialitza les dades del proces inicial */
 void init_task1(void);
 
-void init_freequeue(void);
-
-void init_readyqueue(void);
-
 void init_idle(void);
 
 void init_sched(void);

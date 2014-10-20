@@ -76,9 +76,11 @@ int sys_fork() {
     struct list_head * e = list_first( &freequeue );
     struct task_struct * childTask = list_head_to_task_struct(e);
 
+    list_del(e);
+
     union task_union * childUnion = (union task_union *) childTask;
 
-    copy_data(actualUnion, childUnion, sizeof(actualUnion));
+    copy_data(actualUnion, childUnion, sizeof(union task_union));
 
     //  Initialize field dir_pages_baseAddr with a new directory to store the
     //  process address space using the allocate_DIR routine.
@@ -105,8 +107,6 @@ int sys_fork() {
         }
     }
 
-
-
     //  Inherit user data:
     //
     //      Create new address space: Access page table of the child process through the
@@ -119,17 +119,10 @@ int sys_fork() {
 
     page_table_entry * parentPT = get_PT(actualTask);
 
-    for (pag=NUM_PAG_KERNEL;pag<NUM_PAG_KERNEL+NUM_PAG_CODE;pag++){
-        /*childPT[pag].entry = 0;
-        childPT[pag].bits.pbase_addr = parentPT[pag].bits.pbase_addr;
-        childPT[pag].bits.user = 1;
-        childPT[pag].bits.present = 1;*/
+    for (pag=0;pag<NUM_PAG_KERNEL+NUM_PAG_CODE;pag++){
         set_ss_pag(childPT, pag, get_frame(parentPT, pag));
     }
 
-
-
-    //
     //          Page table entries for the user data+stack have to point to new allocated pages
     //          which hold this region
 
@@ -164,8 +157,6 @@ int sys_fork() {
     }
 
     set_cr3(actualTask->dir_pages_baseAddr);
-
-
 
     // Assign a new PID to the process. The PID must be different from its position in the
     // task_array table.
@@ -214,30 +205,10 @@ int sys_fork() {
 
 void sys_exit() {
     struct task_struct * actualTask = current();
-    page_table_entry * actualPT = get_PT(actualTask);
 
-    int pag;
-    for (pag=0; pag<NUM_PAG_KERNEL; pag++){
-        del_ss_pag(actualPT,pag);
-    }
+    free_user_pages(actualTask);
 
-    for (pag=NUM_PAG_KERNEL; pag<NUM_PAG_KERNEL+NUM_PAG_CODE; pag++){
-        unsigned int codeFrame = get_frame(actualPT, pag);
-        free_frame(codeFrame);
-        del_ss_pag(actualPT,pag);
-    }
-
-    for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++){
-        unsigned int dataFrame = get_frame(actualPT, pag);
-        free_frame(dataFrame);
-        del_ss_pag(actualPT,pag);
-    }
-
-    list_add(&actualTask->list, &freequeue);
-
-    struct task_struct * oldT = current();
-    if(oldT->PID > 0)
-        update_process_state_rr(oldT,&readyqueue);
+    update_process_state_rr(actualTask,&freequeue);
     sched_next_rr();
 }
 

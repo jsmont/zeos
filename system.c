@@ -84,7 +84,6 @@ int __attribute__((__section__(".text.main")))
 
   //monoprocess_init_addr_space(); /* TO BE DELETED WHEN ADDED THE PROCESS MANAGEMENT CODE TO BECOME MULTIPROCESS */
 
-
   /* Initialize Scheduling */
   init_sched();
   /* Initialize idle task  data */
