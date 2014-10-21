@@ -29,20 +29,24 @@
 
 int sys_ni_syscall()
 {
-    update_stats_user_to_system();
+    update_stats_user_to_system(current());
     update_stats_system_to_user(current());
 	return -38; /*ENOSYS*/
 }
 
 int sys_getpid()
 {
+    update_stats_user_to_system(current());
+    update_stats_system_to_user(current());
 	return current()->PID;
 }
 
 int sys_get_stats(int pid, struct stats *st)
 {
+    update_stats_user_to_system(current());
     if(current()->PID == pid) {
         copy_data(&current()->statistics,st,sizeof(struct stats));
+        update_stats_system_to_user(current());
         return 0;
     }else{
         struct list_head * e;
@@ -50,18 +54,23 @@ int sys_get_stats(int pid, struct stats *st)
             struct task_struct * t = list_head_to_task_struct(e);
             if(t->PID==pid) {
                 copy_data(&current()->statistics,st,sizeof(struct stats));
+                update_stats_system_to_user(current());
                 return 0;
             }
         }
     }
+    update_stats_system_to_user(current());
     return -1;
 }
 
 int ret_from_fork() {
+    tics = current()->quantum;
+    current()->statistics.remaining_ticks = tics;
     return 0;
 }
 
 int sys_fork() {
+    update_stats_user_to_system(current());
     //  Get a free task_struct for the process. If there is no space for a new process,
     //  an error will be returned.
 
@@ -103,6 +112,7 @@ int sys_fork() {
             for (i = pag-1; i >= 0; --i) {
                 free_frame(ph_pages[i]);
             }
+          update_stats_system_to_user(current());
           return -1;
         }else {
           ph_pages[pag] = new_ph_pag;
@@ -203,11 +213,14 @@ int sys_fork() {
 
     reset_stats(childTask);
 
+    update_stats_system_to_user(current());
+
     // Return the pid of the child process.
     return childTask->PID;
 }
 
 void sys_exit() {
+    update_stats_user_to_system(current());
     struct task_struct * actualTask = current();
 
     free_user_pages(actualTask);
@@ -217,23 +230,35 @@ void sys_exit() {
 
 int sys_write(int fd, char* buffer, int size)
 {
+    update_stats_user_to_system(current());
     int written = 0;
     int err = check_fd(fd, ESCRIPTURA);
-    if (err < 0) return err;
+    if (err < 0) {
+        update_stats_system_to_user(current());
+        return err;
+    }
     if (buffer == NULL) {
       seterrno(EFAULT);
+      update_stats_system_to_user(current());
       return -EFAULT;
   }
   if (size < 0) {
       seterrno(EINVAL);
+      update_stats_system_to_user(current());
       return -EINVAL;
   }
-  if (!access_ok(VERIFY_READ,buffer,size)) return -1;
+  if (!access_ok(VERIFY_READ,buffer,size)) {
+    update_stats_system_to_user(current());
+    return -1;
+  }
   if(size>256) {
       char nbuff[256];
       while(size>256) {
         err = copy_from_user(buffer, &nbuff, 256);
-        if (err < 0) return err;
+        if (err < 0) {
+            update_stats_system_to_user(current());
+            return err;
+        }
         size-=256;
         buffer+=256;
         written+=sys_write_console(nbuff, 256);
@@ -241,7 +266,11 @@ int sys_write(int fd, char* buffer, int size)
 }
 char nbuff[size];
 err = copy_from_user(buffer, &nbuff, size);
-if (err < 0) return err;
+if (err < 0) {
+    update_stats_system_to_user(current());
+    return err;
+}
 written+=sys_write_console(nbuff, size);
+update_stats_system_to_user(current());
 return written;
 }

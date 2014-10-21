@@ -94,8 +94,10 @@ void setIdt()
 }
 
 void clock_routine() {
+  update_stats_user_to_system(current());
   schedule();
   zeos_show_clock();
+  update_stats_system_to_user(current());
 }
 
 // TEST TASK_SWITCH + GETPID FUNCIONA
@@ -105,6 +107,7 @@ int ejecutandose = INIT;
 
 void keyboard_routine()
 {
+    update_stats_user_to_system(current());
     unsigned char c = inb(0x60);
     if (!(c&0x80)) c = char_map[c&0x7f];
     else return;
@@ -121,6 +124,7 @@ void keyboard_routine()
     }else{
       printc_xy(0,0,'C');
     }
+    update_stats_system_to_user(current());
 }
 
 

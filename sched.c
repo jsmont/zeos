@@ -103,6 +103,8 @@ void init_task1(void)
     tss.esp0 = &(tu->stack[KERNEL_STACK_SIZE]);
     set_cr3(get_DIR(init_task));
 
+    update_stats_ready_to_system(current());
+
     set_quantum(init_task,10);
     reset_stats(init_task);
 }
@@ -130,6 +132,8 @@ struct task_struct* current()
 }
 
 void task_switch(union task_union* newTask) {
+    update_stats_user_to_system(current());
+    update_stats_system_to_user(newTask);
    __asm__ __volatile__ ("pushl %esi\n\t"
              "pushl %edi\n\t"
              "pushl %ebx");
@@ -173,17 +177,17 @@ void schedule_from_exit() {
 }
 
 void sched_next_rr() {
+    update_stats_system_to_ready(current());
     if(!list_empty(&readyqueue)) {
         struct list_head * e = list_first( &readyqueue );
         struct task_struct * t = list_head_to_task_struct(e);
         update_process_state_rr(t,NULL);
-        update_stats_ready_to_system(t);
         tics = get_quantum(t);
-        update_stats_system_to_user(t);
+        update_stats_ready_to_system(t);
         task_switch((union task_union *)t);
     }else{
+        update_stats_ready_to_system(idle_task);
         tics = get_quantum(idle_task);
-        update_stats_system_to_user(idle_task);
         task_switch((union task_union *)idle_task);
     }
 }
@@ -212,7 +216,6 @@ void schedule() {
     if(needs_sched_rr()) {
         struct task_struct * oldT = current();
         if(oldT->PID > 0) {
-            update_stats_system_to_ready(oldT);
             update_process_state_rr(oldT,&readyqueue);
         }
         sched_next_rr();
@@ -229,32 +232,37 @@ void set_quantum (struct task_struct *t, int new_quantum) {
     t->quantum = new_quantum;
 }
 
-void update_stats_user_to_system() {
-    struct stats * actualStats = &(current()->statistics);
-    actualStats->user_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+void update_stats_user_to_system(struct task_struct * t) {
+    struct stats * actualStats = &(t->statistics);
+    actualStats->user_ticks += get_ticks() - actualStats->elapsed_total_ticks;
     actualStats->elapsed_total_ticks = get_ticks();
     actualStats->remaining_ticks = tics;
 }
 
 void update_stats_system_to_user(struct task_struct * t) {
     struct stats * actualStats = &(t->statistics);
-    actualStats->system_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+    actualStats->system_ticks += get_ticks() - actualStats->elapsed_total_ticks;
     actualStats->elapsed_total_ticks = get_ticks();
     actualStats->remaining_ticks = tics;
 }
 
 void update_stats_system_to_ready(struct task_struct * t) {
     struct stats * actualStats = &(t->statistics);
-    actualStats->user_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+    actualStats->system_ticks += get_ticks() - actualStats->elapsed_total_ticks;
     actualStats->elapsed_total_ticks = get_ticks();
 }
 
 void update_stats_ready_to_system(struct task_struct * t) {
+
+    tics = current()->quantum;
+    current()->statistics.remaining_ticks = tics;
+
     struct stats * actualStats = &(t->statistics);
-    actualStats->user_ticks += get_ticks()-actualStats->elapsed_total_ticks;
+    actualStats->ready_ticks += get_ticks() - actualStats->elapsed_total_ticks;
     actualStats->elapsed_total_ticks = get_ticks();
     actualStats->remaining_ticks = tics;
     actualStats->total_trans++;
+
 }
 
 void reset_stats(struct task_struct * t) {
