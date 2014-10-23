@@ -124,6 +124,10 @@ int get_stats(int pid, struct stats * s) {
         ,"r" (s)
         :"%eax"
     );
+    if(out<0) {
+        seterrno(-out);
+        out = -1;
+    }
     return out;
 }
 

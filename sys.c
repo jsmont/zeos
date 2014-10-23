@@ -45,15 +45,16 @@ int sys_get_stats(int pid, struct stats *st)
 {
     update_stats_user_to_system(current());
     if(current()->PID == pid) {
-        copy_data(&current()->statistics,st,sizeof(struct stats));
+        copy_to_user(&current()->statistics,st,sizeof(struct stats));
         update_stats_system_to_user(current());
         return 0;
     }else{
         struct list_head * e;
-        list_for_each( e, &readyqueue ) {
-            struct task_struct * t = list_head_to_task_struct(e);
+        int i;
+        for(i=0; i<NR_TASKS; ++i) {
+            struct task_struct * t = (union task_union *)&(task[i].task);
             if(t->PID==pid) {
-                copy_data(&current()->statistics,st,sizeof(struct stats));
+                copy_to_user(&current()->statistics,st,sizeof(struct stats));
                 update_stats_system_to_user(current());
                 return 0;
             }
@@ -64,8 +65,7 @@ int sys_get_stats(int pid, struct stats *st)
 }
 
 int ret_from_fork() {
-    tics = current()->quantum;
-    current()->statistics.remaining_ticks = tics;
+    update_stats_system_to_user(current());
     return 0;
 }
 
@@ -221,10 +221,14 @@ int sys_fork() {
 
 void sys_exit() {
     update_stats_user_to_system(current());
-    struct task_struct * actualTask = current();
-
-    free_user_pages(actualTask);
-
+    free_user_pages(current());
+    /*int i;
+    page_table_entry * p = get_PT(current());
+    for(i=NUM_PAG_KERNEL+NUM_PAG_CODE; i<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; ++i) {
+        unsigned int frame = get_frame(p, NUM_PAG_KERNEL+NUM_PAG_CODE+i);
+        free_frame(frame);
+        del_ss_pag(p,NUM_PAG_KERNEL+NUM_PAG_CODE+i);
+    }*/
     schedule_from_exit();
 }
 

@@ -103,9 +103,10 @@ void init_task1(void)
     tss.esp0 = &(tu->stack[KERNEL_STACK_SIZE]);
     set_cr3(get_DIR(init_task));
 
-    update_stats_ready_to_system(current());
-
     set_quantum(init_task,10);
+
+    update_stats_ready_to_system(init_task);
+
     reset_stats(init_task);
 }
 
@@ -177,17 +178,14 @@ void schedule_from_exit() {
 }
 
 void sched_next_rr() {
-    update_stats_system_to_ready(current());
     if(!list_empty(&readyqueue)) {
         struct list_head * e = list_first( &readyqueue );
         struct task_struct * t = list_head_to_task_struct(e);
         update_process_state_rr(t,NULL);
-        tics = get_quantum(t);
         update_stats_ready_to_system(t);
         task_switch((union task_union *)t);
     }else{
         update_stats_ready_to_system(idle_task);
-        tics = get_quantum(idle_task);
         task_switch((union task_union *)idle_task);
     }
 }
@@ -201,9 +199,35 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dest) {
 }
 
 int needs_sched_rr() {
-    if(tics==0 && !list_empty(&readyqueue))
-        return 1;
-    return 0;
+    if(tics==0) { // quantum agotado
+        if(current()->PID == 0) { // idle ejecutándose
+            if(!list_empty(&readyqueue)) { // hay procesos ready
+                return 1;
+            }else if(list_empty(&readyqueue)) { // no hay procesos ready
+                return 0;
+            }
+        }else if(current()->PID > 0) { // diferente de idle ejecutándose
+            if(!list_empty(&readyqueue)) { // hay procesos ready
+                return 1;
+            }else if(list_empty(&readyqueue)) { // no hay procesos ready
+                return 1;
+            }
+        }
+    }else{ // quantum no agotado
+        if(current()->PID == 0) { // idle ejecutándose
+            if(!list_empty(&readyqueue)) { // hay procesos ready
+                return 1;
+            }else if(list_empty(&readyqueue)) { // no hay procesos ready
+                return 0;
+            }
+        }else if(current()->PID > 0) { // diferente de idle ejecutándose
+            if(!list_empty(&readyqueue)) { // hay procesos ready
+                return 0;
+            }else if(list_empty(&readyqueue)) { // no hay procesos ready
+                return 0;
+            }
+        }
+    }
 }
 
 void update_sched_data_rr() {
@@ -214,12 +238,12 @@ void update_sched_data_rr() {
 void schedule() {
     update_sched_data_rr();
     if(needs_sched_rr()) {
-        struct task_struct * oldT = current();
-        if(oldT->PID > 0) {
-            update_process_state_rr(oldT,&readyqueue);
+        if(current()->PID > 0) {
+            update_process_state_rr(current(),&readyqueue);
+            update_stats_system_to_ready(current());
         }
         sched_next_rr();
-    }else if(tics==0){
+    }else if(tics==0){ // list empty readyqueue
         tics = get_quantum(current());
     }
 }
@@ -253,14 +277,12 @@ void update_stats_system_to_ready(struct task_struct * t) {
 }
 
 void update_stats_ready_to_system(struct task_struct * t) {
-
-    tics = current()->quantum;
-    current()->statistics.remaining_ticks = tics;
+    tics = t->quantum;
 
     struct stats * actualStats = &(t->statistics);
     actualStats->ready_ticks += get_ticks() - actualStats->elapsed_total_ticks;
     actualStats->elapsed_total_ticks = get_ticks();
-    actualStats->remaining_ticks = tics;
+    actualStats->remaining_ticks = get_quantum(t);
     actualStats->total_trans++;
 
 }
@@ -271,7 +293,7 @@ void reset_stats(struct task_struct * t) {
     actualStats->system_ticks = 0;
     actualStats->blocked_ticks = 0;
     actualStats->ready_ticks = 0;
-    actualStats->elapsed_total_ticks = 0;
+    actualStats->elapsed_total_ticks = get_ticks();
     actualStats->total_trans = 0; /* Number of times the process has got the CPU: READY->RUN transitions */
     actualStats->remaining_ticks = 0;
 }

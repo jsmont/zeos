@@ -233,7 +233,7 @@ void free_user_pages( struct task_struct *task )
     /* DATA */
  for (pag=0;pag<NUM_PAG_DATA;pag++){
 	 free_frame(process_PT[PAG_LOG_INIT_DATA_P0+pag].bits.pbase_addr);
-         process_PT[PAG_LOG_INIT_DATA_P0+pag].entry = 0;
+     process_PT[PAG_LOG_INIT_DATA_P0+pag].entry = 0;
  }
 }
 
