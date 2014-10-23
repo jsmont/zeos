@@ -62,8 +62,10 @@ int sys_get_stats(int pid, struct stats *st)
             }
         }
         update_stats_system_to_user(current());
+    }else if(pid<0){
+        return -EINVAL;
     }
-    return -1;
+    return -ESRCH;
 }
 
 int ret_from_fork() {
