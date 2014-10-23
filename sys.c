@@ -43,7 +43,11 @@ int sys_getpid()
 
 int sys_get_stats(int pid, struct stats *st)
 {
-    if(pid>=0) {
+    if(!access_ok(VERIFY_READ,st,sizeof(struct stats)))
+        return -EFAULT;
+    if(pid<0)
+        return -EINVAL;
+    if(pid>=0 && access_ok(VERIFY_READ,st,sizeof(struct stats))) {
         update_stats_user_to_system(current());
         if(current()->PID == pid) {
             copy_to_user(&current()->statistics,st,sizeof(struct stats));
@@ -62,8 +66,6 @@ int sys_get_stats(int pid, struct stats *st)
             }
         }
         update_stats_system_to_user(current());
-    }else if(pid<0){
-        return -EINVAL;
     }
     return -ESRCH;
 }
@@ -78,8 +80,10 @@ int sys_fork() {
     //  Get a free task_struct for the process. If there is no space for a new process,
     //  an error will be returned.
 
-    if(list_empty(&freequeue))
+    if(list_empty(&freequeue)) {
+        update_stats_system_to_user(current());
         return -ENOMEM; // no hay espacio para contener nuevo proceso
+    }
 
     //  Inherit system data: copy the parent’s task_union to the child. Determine
     //  whether it is necessary to modify the page table of the parent to access the
@@ -223,14 +227,8 @@ int sys_fork() {
 
 void sys_exit() {
     update_stats_user_to_system(current());
+    current()->PID = -1;
     free_user_pages(current());
-    /*int i;
-    page_table_entry * p = get_PT(current());
-    for(i=NUM_PAG_KERNEL+NUM_PAG_CODE; i<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; ++i) {
-        unsigned int frame = get_frame(p, NUM_PAG_KERNEL+NUM_PAG_CODE+i);
-        free_frame(frame);
-        del_ss_pag(p,NUM_PAG_KERNEL+NUM_PAG_CODE+i);
-    }*/
     schedule_from_exit();
 }
 
