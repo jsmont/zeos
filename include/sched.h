@@ -39,7 +39,6 @@ extern struct task_struct *init_task;
 
 extern unsigned int tics;
 
-
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
 
 #define INITIAL_ESP       	KERNEL_ESP(&task[1])

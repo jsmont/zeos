@@ -96,6 +96,10 @@ int fork() {
         :"=r" (out)
         ::"%eax"
         );
+    if(out<0) {
+        seterrno(-out);
+        out = -1;
+    }
     return out;
 }
 

@@ -43,24 +43,26 @@ int sys_getpid()
 
 int sys_get_stats(int pid, struct stats *st)
 {
-    update_stats_user_to_system(current());
-    if(current()->PID == pid) {
-        copy_to_user(&current()->statistics,st,sizeof(struct stats));
-        update_stats_system_to_user(current());
-        return 0;
-    }else{
-        struct list_head * e;
-        int i;
-        for(i=0; i<NR_TASKS; ++i) {
-            struct task_struct * t = (union task_union *)&(task[i].task);
-            if(t->PID==pid) {
-                copy_to_user(&current()->statistics,st,sizeof(struct stats));
-                update_stats_system_to_user(current());
-                return 0;
+    if(pid>=0) {
+        update_stats_user_to_system(current());
+        if(current()->PID == pid) {
+            copy_to_user(&current()->statistics,st,sizeof(struct stats));
+            update_stats_system_to_user(current());
+            return 0;
+        }else{
+            struct list_head * e;
+            int i;
+            for(i=0; i<NR_TASKS; ++i) {
+                struct task_struct * t = (union task_union *)&(task[i].task);
+                if(t->PID==pid) {
+                    copy_to_user(&current()->statistics,st,sizeof(struct stats));
+                    update_stats_system_to_user(current());
+                    return 0;
+                }
             }
         }
+        update_stats_system_to_user(current());
     }
-    update_stats_system_to_user(current());
     return -1;
 }
 
@@ -75,7 +77,7 @@ int sys_fork() {
     //  an error will be returned.
 
     if(list_empty(&freequeue))
-        return -1; // no hay espacio para contener nuevo proceso
+        return -ENOMEM; // no hay espacio para contener nuevo proceso
 
     //  Inherit system data: copy the parent’s task_union to the child. Determine
     //  whether it is necessary to modify the page table of the parent to access the
@@ -106,16 +108,14 @@ int sys_fork() {
     int new_ph_pag;
     int ph_pages[NUM_PAG_DATA];
     for (pag=0;pag<NUM_PAG_DATA;pag++){
-        new_ph_pag=alloc_frame();
-        if(new_ph_pag==-1) {
+        ph_pages[pag]=alloc_frame();
+        if(ph_pages[pag]==-1) {
             int i;
             for (i = pag-1; i >= 0; --i) {
                 free_frame(ph_pages[i]);
             }
           update_stats_system_to_user(current());
-          return -1;
-        }else {
-          ph_pages[pag] = new_ph_pag;
+          return -EAGAIN;
         }
     }
 

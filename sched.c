@@ -148,7 +148,7 @@ void inner_task_switch(union task_union* t) {
     // PÀG. 49 Documentacio.pdf, PÀG. 30 Slide tema 4.pdf
     struct task_struct * newTask = &(t->task);
 
-    tss.esp0 = (unsigned int)(newTask->kernel_esp);
+    tss.esp0 = (unsigned int)&(t->stack[KERNEL_STACK_SIZE]);
 
     set_cr3(get_DIR(newTask));
 
