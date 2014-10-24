@@ -59,7 +59,7 @@ int sys_get_stats(int pid, struct stats *st)
             for(i=0; i<NR_TASKS; ++i) {
                 struct task_struct * t = (union task_union *)&(task[i].task);
                 if(t->PID==pid) {
-                    copy_to_user(&current()->statistics,st,sizeof(struct stats));
+                    copy_to_user(&t->statistics,st,sizeof(struct stats));
                     update_stats_system_to_user(current());
                     return 0;
                 }

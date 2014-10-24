@@ -66,7 +66,7 @@ page_table_entry * get_DIR (struct task_struct *t) ;
 
 /* Headers for the scheduling policy */
 void sched_next_rr();
-void update_process_state_rr(struct task_struct * task, struct list_head *dest);
+void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
 
