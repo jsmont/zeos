@@ -3,9 +3,7 @@
 */
 
 #include <libc.h>
-
 #include <types.h>
-
 #include <errno.h>
 
 const char * errorCodes[34] = {
@@ -84,7 +82,7 @@ void exit() {
     __asm__ (
         "movl $1, %eax;"
         "int $0x80;"
-    );
+        );
 }
 
 int fork() {
@@ -127,7 +125,7 @@ int get_stats(int pid, struct stats * s) {
         :"r" (pid)
         ,"r" (s)
         :"%eax"
-    );
+        );
     if(out<0) {
         seterrno(-out);
         out = -1;
@@ -162,11 +160,8 @@ void itoa(int a, char *b)
 int strlen(char *a)
 {
     int i;
-
     i=0;
-
     while (a[i]!=0) i++;
-
     return i;
 }
 

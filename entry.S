@@ -1,6 +1,6 @@
 /*
- * entry.S - Entry point to system mode from user mode
- */
+* entry.S - Entry point to system mode from user mode
+*/
 
 #include <asm.h>
 #include <segment.h>
@@ -36,64 +36,64 @@
 /**************************************************/
 
 #define SAVE_ALL \
-      pushl %gs; \
-      pushl %fs; \
-      pushl %es; \
-      pushl %ds; \
-      pushl %eax; \
-      pushl %ebp; \
-      pushl %edi; \
-      pushl %esi; \
-      pushl %edx; \
-      pushl %ecx; \
-      pushl %ebx; \
-      movl $__KERNEL_DS, %edx;    \
-      movl %edx, %ds;           \
-      movl %edx, %es
+pushl %gs; \
+pushl %fs; \
+pushl %es; \
+pushl %ds; \
+pushl %eax; \
+pushl %ebp; \
+pushl %edi; \
+pushl %esi; \
+pushl %edx; \
+pushl %ecx; \
+pushl %ebx; \
+movl $__KERNEL_DS, %edx;    \
+movl %edx, %ds;           \
+movl %edx, %es
 
 #define RESTORE_ALL \
-      pop %ebx; \
-      pop %ecx; \
-      pop %edx; \
-      pop %esi; \
-      pop %edi; \
-      pop %ebp; \
-      pop %eax; \
-      pop %ds; \
-      pop %es; \
-      pop %fs; \
-      pop %gs;
+pop %ebx; \
+pop %ecx; \
+pop %edx; \
+pop %esi; \
+pop %edi; \
+pop %ebp; \
+pop %eax; \
+pop %ds; \
+pop %es; \
+pop %fs; \
+pop %gs;
 
 #define EOI \
-      movb $0x20, %al; \
-      outb %al, $0x20 ;
+movb $0x20, %al; \
+outb %al, $0x20 ;
 
 ENTRY(clock_handler)
-      SAVE_ALL;
-      EOI;
-      CALL clock_routine;
-      RESTORE_ALL;
-      IRET;
+SAVE_ALL;
+EOI;
+CALL clock_routine;
+RESTORE_ALL;
+IRET;
 
 ENTRY(keyboard_handler)
-  SAVE_ALL;
-  EOI;
-  call keyboard_routine;
-  RESTORE_ALL;
-  iret;
+SAVE_ALL;
+EOI;
+call keyboard_routine;
+RESTORE_ALL;
+iret;
 
 
 ENTRY(system_call_handler)
-  SAVE_ALL;
-  cmpl $0, %eax;
-  jl err;
-  cmpl $MAX_SYSCALL, %eax;
-  jg err;
-  call *sys_call_table(, %eax, 0x04);
-  jmp fin;
+SAVE_ALL;
+cmpl $0, %eax;
+jl err;
+cmpl $MAX_SYSCALL, %eax;
+jg err;
+call *sys_call_table(, %eax, 0x04);
+jmp fin;
 err:
-  movl $-38, %eax;
+movl $-38, %eax;
 fin:
-  movl %eax, 0x18(%esp);
-  RESTORE_ALL;
-  iret;
+movl %eax, 0x18(%esp);
+RESTORE_ALL;
+iret;

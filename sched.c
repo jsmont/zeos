@@ -1,6 +1,6 @@
 /*
- * sched.c - initializes struct for task 0 anda task 1
- */
+* sched.c - initializes struct for task 0 anda task 1
+*/
 
 #include <sched.h>
 #include <mm.h>
@@ -13,17 +13,17 @@ struct task_struct *init_task;
 unsigned int tics;
 
 /**
- * Container for the Task array and 2 additional pages (the first and the last one)
- * to protect against out of bound accesses.
- */
+* Container for the Task array and 2 additional pages (the first and the last one)
+* to protect against out of bound accesses.
+*/
 union task_union protected_tasks[NR_TASKS+2]
-  __attribute__((__section__(".data.task")));
+__attribute__((__section__(".data.task")));
 
 union task_union *task = &protected_tasks[1]; /* task array */
 
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
-  return list_entry( l, struct task_struct, list);
+    return list_entry( l, struct task_struct, list);
 }
 
 extern struct list_head blocked;
@@ -58,14 +58,7 @@ void cpu_idle(void)
 
     while(1)
     {
-        // TEST TASK_SWITCH + GETPID FUNCIONA
-        /*char * chivato = "\nejecutando task idle. pid: ";
-        printk(chivato);
-        char buffer[1];
-        itoa( (struct task_struct *)current()->PID, buffer);
-        printk(buffer);
-        chivato = "\n";
-        printk(chivato);*/
+        ;
     }
 }
 
@@ -123,29 +116,29 @@ void init_sched(){
 
 struct task_struct* current()
 {
-  int ret_value;
+    int ret_value;
 
-  __asm__ __volatile__(
-    "movl %%esp, %0"
-    : "=g" (ret_value)
-  );
-  return (struct task_struct*)(ret_value&0xfffff000);
+    __asm__ __volatile__(
+        "movl %%esp, %0"
+        : "=g" (ret_value)
+        );
+    return (struct task_struct*)(ret_value&0xfffff000);
 }
 
 void task_switch(union task_union* newTask) {
     update_stats_user_to_system(current());
     update_stats_system_to_user(newTask);
-   __asm__ __volatile__ ("pushl %esi\n\t"
-             "pushl %edi\n\t"
-             "pushl %ebx");
-   inner_task_switch(newTask);
-   __asm__ __volatile__("popl %ebx\n\t"
-             "popl %edi\n\t"
-             "popl %esi");
+    __asm__ __volatile__ ("pushl %esi\n\t"
+        "pushl %edi\n\t"
+        "pushl %ebx");
+    inner_task_switch(newTask);
+    __asm__ __volatile__("popl %ebx\n\t"
+        "popl %edi\n\t"
+        "popl %esi");
 }
 
 void inner_task_switch(union task_union* t) {
-    // PÀG. 49 Documentacio.pdf, PÀG. 30 Slide tema 4.pdf
+
     struct task_struct * newTask = &(t->task);
 
     tss.esp0 = (unsigned int)&(t->stack[KERNEL_STACK_SIZE]);
@@ -156,7 +149,7 @@ void inner_task_switch(union task_union* t) {
     __asm__ __volatile__(
         "movl %%ebp, %0" :
         "=r" (ebp)
-    );
+        );
 
     struct task_struct * actualTask = current();
     actualTask->kernel_esp = ebp;
@@ -164,12 +157,12 @@ void inner_task_switch(union task_union* t) {
     __asm__ __volatile__(
         "movl %0, %%esp" ::
         "r" (newTask->kernel_esp)
-    );
+        );
 
     __asm__ __volatile__(
         "popl %ebp\n\t"
         "ret"
-    );
+        );
 }
 
 void schedule_from_exit() {
@@ -199,33 +192,25 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dest) {
 }
 
 int needs_sched_rr() {
-    if(tics==0) { // quantum agotado
-        if(current()->PID == 0) { // idle ejecutándose
-            if(!list_empty(&readyqueue)) { // hay procesos ready
+    if(tics==0) {
+        if(current()->PID == 0) {
+            if(!list_empty(&readyqueue)) {
                 return 1;
-            }else if(list_empty(&readyqueue)) { // no hay procesos ready
+            }else if(list_empty(&readyqueue)) {
                 return 0;
             }
-        }else if(current()->PID > 0) { // diferente de idle ejecutándose
-            if(!list_empty(&readyqueue)) { // hay procesos ready
-                return 1;
-            }else if(list_empty(&readyqueue)) { // no hay procesos ready
-                return 1;
-            }
+        }else{
+            return 1;
         }
-    }else{ // quantum no agotado
-        if(current()->PID == 0) { // idle ejecutándose
-            if(!list_empty(&readyqueue)) { // hay procesos ready
+    }else{
+        if(current()->PID == 0) {
+            if(!list_empty(&readyqueue)) {
                 return 1;
-            }else if(list_empty(&readyqueue)) { // no hay procesos ready
+            }else if(list_empty(&readyqueue)) {
                 return 0;
             }
-        }else if(current()->PID > 0) { // diferente de idle ejecutándose
-            if(!list_empty(&readyqueue)) { // hay procesos ready
-                return 0;
-            }else if(list_empty(&readyqueue)) { // no hay procesos ready
-                return 0;
-            }
+        }else{
+            return 0;
         }
     }
 }
@@ -243,7 +228,7 @@ void schedule() {
             update_stats_system_to_ready(current());
         }
         sched_next_rr();
-    }else if(tics==0){ // list empty readyqueue
+    }else if(tics==0){
         tics = get_quantum(current());
     }
 }
@@ -278,13 +263,11 @@ void update_stats_system_to_ready(struct task_struct * t) {
 
 void update_stats_ready_to_system(struct task_struct * t) {
     tics = t->quantum;
-
     struct stats * actualStats = &(t->statistics);
     actualStats->ready_ticks += get_ticks() - actualStats->elapsed_total_ticks;
     actualStats->elapsed_total_ticks = get_ticks();
     actualStats->remaining_ticks = get_quantum(t);
     actualStats->total_trans++;
-
 }
 
 void reset_stats(struct task_struct * t) {
