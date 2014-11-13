@@ -43,11 +43,11 @@ int sys_getpid()
 
 int sys_get_stats(int pid, struct stats *st)
 {
-    if(!access_ok(VERIFY_READ,st,sizeof(struct stats)))
+    if(!access_ok(VERIFY_WRITE,st,sizeof(struct stats)))
         return -EFAULT;
     if(pid<0)
         return -EINVAL;
-    if(pid>=0 && access_ok(VERIFY_READ,st,sizeof(struct stats))) {
+    if(pid>=0 && access_ok(VERIFY_WRITE,st,sizeof(struct stats))) {
         update_stats_user_to_system(current());
         if(current()->PID == pid) {
             copy_to_user(&current()->statistics,st,sizeof(struct stats));
@@ -92,7 +92,7 @@ int sys_fork() {
     list_del(e);
 
     union task_union * childUnion = (union task_union *) childTask;
-
+sys_write_console(nbuff, size);
     copy_data(actualUnion, childUnion, sizeof(union task_union));
 
     allocate_DIR(childTask);
@@ -196,7 +196,9 @@ int sys_write(int fd, char* buffer, int size)
             }
             size-=256;
             buffer+=256;
-            written+=sys_write_console(nbuff, 256);
+	    int res = sys_write_console(nbuff, 256); 
+            if(res >= 0) written+=res;
+	    else return res;
         }
     }
     char nbuff[size];
@@ -205,7 +207,57 @@ int sys_write(int fd, char* buffer, int size)
         update_stats_system_to_user(current());
         return err;
     }
-    written+=sys_write_console(nbuff, size);
+    int res = sys_write_console(nbuff, size);
+    if(res >= 0)written+= res;
+    else return res;
     update_stats_system_to_user(current());
     return written;
+}
+
+int sys_clone(void (*funcion)(void), void *stack){
+     update_stats_user_to_system(current());
+
+    if(list_empty(&freequeue)) {
+        update_stats_system_to_user(current());
+        return -ENOMEM;
+    }
+
+    struct task_struct * actualTask = current();
+    union task_union * actualUnion = (union task_union *) actualTask;
+
+    struct list_head * e = list_first( &freequeue );
+    struct task_struct * childTask = list_head_to_task_struct(e);
+
+    list_del(e);
+
+    union task_union * childUnion = (union task_union *) childTask;
+
+    copy_data(actualUnion, childUnion, sizeof(union task_union));
+
+    allocate_DIR(childTask);
+
+    page_table_entry * childPT = get_PT(childTask);
+
+    page_table_entry * parentPT = get_PT(actualTask);
+
+    childTask->PID = actualTask->PID;
+
+    unsigned int ebp;
+    __asm__(
+        "movl %%ebp, %0" :
+        "=r" (ebp)
+        );
+
+    unsigned int dif = (ebp-(unsigned int)&actualUnion->stack[0])/4;
+    childUnion->stack[dif] = &ret_from_fork;
+    childUnion->stack[dif-1] = 0;
+    childTask->kernel_esp = &(childUnion->stack[dif-1]);
+
+    list_add_tail(&(childTask->list),&readyqueue);
+
+    reset_stats(childTask);
+
+    update_stats_system_to_user(current());
+
+    return childTask->PID;
 }

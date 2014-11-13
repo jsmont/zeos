@@ -98,8 +98,6 @@ void init_task1(void)
 
     set_quantum(init_task,10);
 
-    update_stats_ready_to_system(init_task);
-
     reset_stats(init_task);
 }
 
@@ -179,7 +177,7 @@ void sched_next_rr() {
         task_switch((union task_union *)t);
     }else{
         update_stats_ready_to_system(idle_task);
-        task_switch((union task_union *)idle_task);
+        if(current()->PID != 0)task_switch((union task_union *)idle_task);
     }
 }
 
