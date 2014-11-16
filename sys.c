@@ -92,7 +92,6 @@ int sys_fork() {
     list_del(e);
 
     union task_union * childUnion = (union task_union *) childTask;
-sys_write_console(nbuff, size);
     copy_data(actualUnion, childUnion, sizeof(union task_union));
 
     allocate_DIR(childTask);
@@ -196,7 +195,7 @@ int sys_write(int fd, char* buffer, int size)
             }
             size-=256;
             buffer+=256;
-	    int res = sys_write_console(nbuff, 256); 
+	    int res = sys_write_console(nbuff, 256);
             if(res >= 0) written+=res;
 	    else return res;
         }

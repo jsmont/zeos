@@ -59,14 +59,14 @@ void perror(char *str) {
 int write(int fd, char *buffer, int size) {
     int out;
     __asm__ (
-	"pushl %%ebx"
+	    "pushl %%ebx;"
         "movl $4, %%eax;"
         "movl %1, %%ebx;"
         "movl %2, %%ecx;"
         "movl %3, %%edx;"
         "int $0x80;"
-        "movl %%eax, %0"
-	"popl %%ebx"
+        "movl %%eax, %0;"
+	    "popl %%ebx;"
         :"=r" (out)
         :"r" (fd)
         ,"r" (buffer)
@@ -122,7 +122,7 @@ int get_stats(int pid, struct stats * s) {
         "movl %1, %%ebx;"
         "movl %2, %%ecx;"
         "int $0x80;"
-        "movl %%eax, %0"
+        "movl %%eax, %0;"
         :"=r" (out)
         :"r" (pid)
         ,"r" (s)
@@ -171,10 +171,10 @@ int clone(void (*function)(void), void *stack){
     int out;
     __asm__ (
         "movl $19, %%eax;"
-	"movl %1, %%ebx;"
+	    "movl %1, %%ebx;"
         "movl %2, %%ecx;"
-	"int $0x80;"
-        "movl %%eax, %0"
+	    "int $0x80;"
+        "movl %%eax, %0;"
         :"=r" (out)
         :"r" (function),
 	 "r" (stack)
