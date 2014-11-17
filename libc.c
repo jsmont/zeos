@@ -186,3 +186,78 @@ int clone(void (*function)(void), void *stack){
     }
     return out;
 }
+
+/* sems */
+int sem_init(int n_sem, unsigned int value) {
+    int out;
+    __asm__ (
+        "movl $21, %%eax;"
+        "movl %1, %%ebx;"
+        "movl %2, %%ecx;"
+        "int $0x80;"
+        "movl %%eax, %0;"
+        :"=r" (out)
+        :"r" (n_sem)
+        ,"r" (value)
+        :"%eax"
+        );
+    if(out<0) {
+        seterrno(-out);
+        out = -1;
+    }
+    return out;
+}
+
+int sem_wait(int n_sem) {
+    int out;
+    __asm__ (
+        "movl $22, %%eax;"
+        "movl %1, %%ebx;"
+        "int $0x80;"
+        "movl %%eax, %0;"
+        :"=r" (out)
+        :"r" (n_sem)
+        :"%eax"
+        );
+    if(out<0) {
+        seterrno(-out);
+        out = -1;
+    }
+    return out;
+}
+
+int sem_signal(int n_sem) {
+    int out;
+    __asm__ (
+        "movl $23, %%eax;"
+        "movl %1, %%ebx;"
+        "int $0x80;"
+        "movl %%eax, %0;"
+        :"=r" (out)
+        :"r" (n_sem)
+        :"%eax"
+        );
+    if(out<0) {
+        seterrno(-out);
+        out = -1;
+    }
+    return out;
+}
+
+int sem_destroy(int n_sem) {
+    int out;
+    __asm__ (
+        "movl $24, %%eax;"
+        "movl %1, %%ebx;"
+        "int $0x80;"
+        "movl %%eax, %0;"
+        :"=r" (out)
+        :"r" (n_sem)
+        :"%eax"
+        );
+    if(out<0) {
+        seterrno(-out);
+        out = -1;
+    }
+    return out;
+}

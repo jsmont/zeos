@@ -157,6 +157,17 @@ int sys_fork() {
 
 void sys_exit() {
     update_stats_user_to_system(current());
+    /* liberamos semaphores;
+    se puede optimizar? p ej. lista de semaforos en task_struct y list_head en sem_struct.
+    Y cada vez que sem_init, entonces list_add_tail(&list_head, &current()->semaphores).
+    Aun así, como solo hay 20 semáforos, creo que nos podemos permitir recorrerlos 1 a 1. */
+    int i;
+    for(i=0; i<NR_SEMAPHORES; ++i) {
+        struct sem_struct * s = &semaphore[i];
+        if(s->owner == current()->PID) {
+            sys_sem_destroy(i);
+        }
+    }
     current()->PID = -1;
     free_user_pages(current());
     schedule_from_exit();
@@ -259,4 +270,69 @@ int sys_clone(void (*funcion)(void), void *stack){
     update_stats_system_to_user(current());
 
     return childTask->PID;
+}
+
+/* sems */
+int sys_sem_init(int n_sem, unsigned int value) {
+    int i;
+    if(n_sem<0 || n_sem>=NR_SEMAPHORES)
+        return -EINVAL;
+    struct sem_struct * s = &semaphore[n_sem];
+    if(s->owner<0) { // libre
+        s->count = value;
+        INIT_LIST_HEAD( &s->blocked );
+        s->owner = current()->PID;
+        return 0;
+    }else{
+        return -EBUSY;
+    }
+}
+
+int sys_sem_wait(int n_sem) {
+
+}
+
+int sys_sem_signal(int n_sem) {
+    if(n_sem<0 || n_sem>=NR_SEMAPHORES)
+        return -EINVAL;
+
+    struct sem_struct * s = &semaphore[n_sem];
+    if(s->owner == -1)
+        return -EINVAL;
+
+    if(current()->PID == s->owner) {
+        s->count++;
+        if(s->count <= 0) {
+            struct list_head * e = list_first( &s->blocked );
+            list_del(e);
+            list_add_tail(e, &readyqueue);
+        }
+        return 0;
+    }else{
+        return -EPERM;
+    }
+}
+
+int sys_sem_destroy(int n_sem) {
+    if(n_sem<0 || n_sem>=NR_SEMAPHORES)
+        return -EINVAL;
+
+    struct sem_struct * s = &semaphore[n_sem];
+    if(s->owner == -1)
+        return -EINVAL;
+
+    if(current()->PID == s->owner) {
+        s->count = 0;
+        s->owner = -1;
+        if(!list_empty(&s->blocked)) {
+            struct list_head * e = list_first( &s->blocked );
+            list_for_each( e, &s->blocked ) {
+                list_del(e);
+                list_add_tail(e, &readyqueue);
+            }
+        }
+        return 0;
+    }else{
+        return -EPERM;
+    }
 }

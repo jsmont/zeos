@@ -10,7 +10,8 @@
 #include <stats.h>
 #include <mm_address.h>
 
-#define NR_TASKS      10
+#define NR_TASKS            10
+#define NR_SEMAPHORES       20
 #define KERNEL_STACK_SIZE	1024
 
 struct list_head freequeue;
@@ -27,6 +28,12 @@ struct task_struct {
   struct stats statistics;
 };
 
+struct sem_struct {
+  int count;
+  struct list_head blocked;
+  int owner;
+};
+
 union task_union {
   struct task_struct task;
   unsigned long stack[KERNEL_STACK_SIZE];    /* pila de sistema, per procés */
@@ -36,6 +43,9 @@ extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
 extern struct task_struct *init_task;
+
+extern struct sem_struct protected_semaphores[NR_SEMAPHORES+2];
+extern struct sem_struct *semaphore;
 
 extern unsigned int tics;
 
@@ -49,6 +59,8 @@ void init_task1(void);
 void init_idle(void);
 
 void init_sched(void);
+
+void init_sem(void);
 
 struct task_struct * current();
 

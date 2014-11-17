@@ -10,6 +10,9 @@
 struct task_struct *idle_task;
 struct task_struct *init_task;
 
+struct sem_struct protected_semaphores[NR_SEMAPHORES+2];
+struct sem_struct *semaphore = &protected_semaphores[1];
+
 unsigned int tics;
 
 /**
@@ -110,6 +113,15 @@ void init_sched(){
     }
 
     INIT_LIST_HEAD( &readyqueue );
+}
+
+void init_sem(){
+    int i;
+    for(i=0; i<NR_SEMAPHORES; ++i) {
+        struct sem_struct * s = &semaphore[i];
+        s->count = 0;
+        s->owner = -1;
+    }
 }
 
 struct task_struct* current()
