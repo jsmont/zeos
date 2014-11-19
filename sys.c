@@ -296,9 +296,6 @@ int sys_sem_wait(int n_sem) {
     if(s->owner < 0)
         return -EINVAL;
 
-    // ojo diferencias transpas (111, tema 4 y docu de ZeOS)!! why?
-    // OJO error JPP. MEDIUM. why?
-
     if(s->count<=0) {
 
     }else{
@@ -317,7 +314,6 @@ int sys_sem_signal(int n_sem) {
     if(s->owner < 0)
         return -EINVAL;
 
-    // ojo diferencias transpas (111, tema 4 y docu de ZeOS)!! why?
     // OJO error JPP. MEDIUM. why?
     if(current()->PID == s->owner) {
         if(list_empty(&s->blocked)) {
