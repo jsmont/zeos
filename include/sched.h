@@ -44,7 +44,7 @@ extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
 extern struct task_struct *init_task;
 
-extern struct sem_struct protected_semaphores[NR_SEMAPHORES+2];
+extern struct sem_struct semaphores[NR_SEMAPHORES];
 extern struct sem_struct *semaphore;
 
 extern unsigned int tics;

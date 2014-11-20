@@ -316,21 +316,15 @@ int sys_sem_signal(int n_sem) {
     struct sem_struct * s = &semaphore[n_sem];
     if(s->owner < 0)
         return -EINVAL;
-
-    // OJO error JPP. MEDIUM. why?
-    if(current()->PID == s->owner) {
-        if(list_empty(&s->blocked)) {
-            s->count++;
-        }else{
-            struct list_head * e = list_first( &s->blocked );
-            list_del(e);
-            update_process_state_rr(list_head_to_task_struct(e), &readyqueue);
-            //list_add_tail(e, &readyqueue);
-        }
-        return 0;
+    
+    if(list_empty(&s->blocked)) {
+        s->count++;
     }else{
-        return -EPERM;
+        struct list_head * e = list_first( &s->blocked );
+        list_del(e);
+        update_process_state_rr(list_head_to_task_struct(e), &readyqueue);
     }
+    return 0;
 }
 
 int sys_sem_destroy(int n_sem) {
@@ -346,7 +340,9 @@ int sys_sem_destroy(int n_sem) {
         s->owner = -1;
         if(!list_empty(&s->blocked)) {
             struct list_head * e = list_first( &s->blocked );
-            list_for_each( e, &s->blocked ) {
+            list_del(e);
+            list_add_tail(e, &readyqueue);
+            list_for_each(e, &s->blocked) {
                 list_del(e);
                 list_add_tail(e, &readyqueue);
             }
