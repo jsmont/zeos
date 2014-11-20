@@ -10,8 +10,8 @@
 struct task_struct *idle_task;
 struct task_struct *init_task;
 
-struct sem_struct protected_semaphores[NR_SEMAPHORES+2];
-struct sem_struct *semaphore = &protected_semaphores[1];
+struct sem_struct semaphores[NR_SEMAPHORES];
+struct sem_struct *semaphore = &semaphores[0];
 
 unsigned int tics;
 
@@ -120,6 +120,7 @@ void init_sem(){
     for(i=0; i<NR_SEMAPHORES; ++i) {
         struct sem_struct * s = &semaphore[i];
         s->count = 0;
+        INIT_LIST_HEAD( &s->blocked );
         s->owner = -1;
     }
 }
