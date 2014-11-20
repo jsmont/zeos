@@ -120,6 +120,7 @@ void init_sem(){
     for(i=0; i<NR_SEMAPHORES; ++i) {
         struct sem_struct * s = &semaphore[i];
         s->count = 0;
+        INIT_LIST_HEAD( &s->blocked );
         s->owner = -1;
     }
 }

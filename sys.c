@@ -280,7 +280,6 @@ int sys_sem_init(int n_sem, unsigned int value) {
     struct sem_struct * s = &semaphore[n_sem];
     if(s->owner<0) { // libre
         s->count = value;
-        INIT_LIST_HEAD( &s->blocked );
         s->owner = current()->PID;
         return 0;
     }else{
@@ -297,7 +296,10 @@ int sys_sem_wait(int n_sem) {
         return -EINVAL;
 
     if(s->count<=0) {
-
+        update_process_state_rr(current(), &s->blocked);
+        sched_next_rr();
+        if(s->owner<0) // se lo han cargado
+            return -1;
     }else{
         --(s->count);
     }
@@ -307,6 +309,7 @@ int sys_sem_wait(int n_sem) {
 }
 
 int sys_sem_signal(int n_sem) {
+
     if(n_sem<0 || n_sem>=NR_SEMAPHORES)
         return -EINVAL;
 
@@ -321,7 +324,8 @@ int sys_sem_signal(int n_sem) {
         }else{
             struct list_head * e = list_first( &s->blocked );
             list_del(e);
-            list_add_tail(e, &readyqueue);
+            update_process_state_rr(list_head_to_task_struct(e), &readyqueue);
+            //list_add_tail(e, &readyqueue);
         }
         return 0;
     }else{
