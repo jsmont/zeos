@@ -43,6 +43,7 @@ extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
 extern struct task_struct *init_task;
+extern int cont_dir[NR_TASKS];
 
 extern struct sem_struct semaphores[NR_SEMAPHORES];
 extern struct sem_struct *semaphore;

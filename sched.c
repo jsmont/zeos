@@ -95,7 +95,7 @@ void init_idle (void)
     tu->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
 
     idle_task->kernel_esp = (unsigned int) & (tu->stack[KERNEL_STACK_SIZE-2]);
-    cont_dir[calculate_DIR(tu)] = 1;
+    cont_dir[search_DIR(&tu)] = 1;
     
     set_quantum(idle_task,1);
     reset_stats(idle_task);
