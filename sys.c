@@ -233,7 +233,7 @@ int sys_write(int fd, char* buffer, int size)
 int sys_clone(void (*funcion)(void), void *stack){
     update_stats_user_to_system(current());
     
-    if (!access_ok(VERIFY_WRITE, stack,4) || !access_ok(VERIFY_READ, function, 4)){
+    if (!access_ok(VERIFY_WRITE, stack,4) || !access_ok(VERIFY_READ, funcion, 4)){
         update_stats_user_to_system(current());
         return -EFAULT;
     }
