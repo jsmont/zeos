@@ -262,11 +262,31 @@ int sys_clone(void (*funcion)(void), void *stack){
     ++pids;
     ++cont_dir[search_DIR(current())];
     
+    int current_ebp;
+    __asm__ __volatile__(
+                         "mov %%ebp,%0;"
+                         : "=r" (current_ebp)
+                         );
+    unsigned int pos_ebp = ((unsigned int)current_ebp-(unsigned int)current())/4;
+
+    
     //
-    childUnion->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
-    childUnion->stack[KERNEL_STACK_SIZE-19] = 0;
-    childUnion->stack[KERNEL_STACK_SIZE-5] = funcion;
-    childUnion->stack[KERNEL_STACK_SIZE-2] = stack;
+    childUnion->task.kernel_esp = (unsigned int)&new_stack->stack[pos_ebp];
+    /* @ retorn estàndard: Restore ALL + iret */
+    childUnion->stack[pos_ebp+1] = (unsigned int)&ret_from_fork;
+    /* Modificació del ebp amb la @ de la stack */
+    childUnion->stack[pos_ebp+7] = (unsigned int)stack;
+    
+    // |	eip	|
+    // |	es	|
+    // |eflags|
+    // |	esp	|
+    // |	ss	|
+    
+    /* Modificació del registre eip que restaurarà el iret */
+    childUnion->stack[pos_ebp+13] = (unsigned int)function;
+    /* Modificació del registre esp per fer a la @stack: push   %ebp 	*/
+    childUnion->stack[pos_ebp+16] = (unsigned int)stack;
     
     list_add_tail(&(childTask->list),&readyqueue);
     
