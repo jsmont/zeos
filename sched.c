@@ -14,6 +14,7 @@ struct sem_struct semaphores[NR_SEMAPHORES];
 struct sem_struct *semaphore = &semaphores[0];
 
 unsigned int tics;
+int cont_dir[NR_TASKS];
 
 /**
 * Container for the Task array and 2 additional pages (the first and the last one)
@@ -46,13 +47,29 @@ page_table_entry * get_PT (struct task_struct *t)
 
 int allocate_DIR(struct task_struct *t)
 {
-    int pos;
+/*    int pos;
 
     pos = ((int)t-(int)task)/sizeof(union task_union);
 
     t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos];
 
+    return 1;*/
+    int i;
+    for (i = 0; i < NR_TASKS; ++i) {
+        if (cont_dir[i] == 0) {
+            t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[i];
+            return 1;
+        }
+    }
     return 1;
+}
+
+int get_DIR(struct task_struct *t)
+{
+    int ini, tsk;
+    ini = (int)((page_table_entry*) &dir_pages[0]);
+    tsk = (int)t->dir_pages_baseAddr;
+    return (tsk - ini)/sizeof(dir_pages[0]);
 }
 
 void cpu_idle(void)
@@ -78,7 +95,8 @@ void init_idle (void)
     tu->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
 
     idle_task->kernel_esp = (unsigned int) & (tu->stack[KERNEL_STACK_SIZE-2]);
-
+    cont_dir[calculate_DIR(tu)] = 1;
+    
     set_quantum(idle_task,1);
     reset_stats(idle_task);
 }
@@ -99,6 +117,7 @@ void init_task1(void)
     tss.esp0 = &(tu->stack[KERNEL_STACK_SIZE]);
     set_cr3(get_DIR(init_task));
 
+    cont_dir[calculate_DIR(tu)] = 1;
     set_quantum(init_task,10);
 
     reset_stats(init_task);
@@ -110,6 +129,7 @@ void init_sched(){
     int i;
     for(i=0; i<NR_TASKS ; ++i) {
         list_add(&task[i].task.list, &freequeue );
+        cont_dir[i] = 0;
     }
 
     INIT_LIST_HEAD( &readyqueue );

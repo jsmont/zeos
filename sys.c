@@ -168,8 +168,12 @@ void sys_exit() {
             sys_sem_destroy(i);
         }
     }
-    current()->PID = -1;
-    free_user_pages(current());
+    --cont_dir[get_DIR(current())];
+    if (cont_dir[get_DIR(current())] <= 0) {
+        free_user_pages(current());
+    }
+
+
     schedule_from_exit();
 }
 
@@ -227,13 +231,17 @@ int sys_write(int fd, char* buffer, int size)
 int sys_clone(void (*funcion)(void), void *stack){
     update_stats_user_to_system(current());
     
+    if (!access_ok(VERIFY_WRITE, stack,4) || !access_ok(VERIFY_READ, function, 4)){
+        update_stats_user_to_system(current());
+        return -EFAULT;
+    }
+    
     if(list_empty(&freequeue)) {
         update_stats_system_to_user(current());
         return -ENOMEM;
     }
     
-    struct task_struct * actualTask = current();
-    union task_union * actualUnion = (union task_union *) actualTask;
+    union task_union * actualUnion = (union task_union *) current();
     
     struct list_head * e = list_first( &freequeue );
     struct task_struct * childTask = list_head_to_task_struct(e);
@@ -243,57 +251,19 @@ int sys_clone(void (*funcion)(void), void *stack){
     union task_union * childUnion = (union task_union *) childTask;
     copy_data(actualUnion, childUnion, sizeof(union task_union));
     
-    allocate_DIR(childTask);
-    
-    int pag;
-    int new_ph_pag;
-    int ph_pages[NUM_PAG_DATA];
-    for (pag=0;pag<NUM_PAG_DATA;pag++){
-        ph_pages[pag]=alloc_frame();
-        if(ph_pages[pag]==-1) {
-            int i;
-            for (i = pag-1; i >= 0; --i) {
-                free_frame(ph_pages[i]);
-            }
-            update_stats_system_to_user(current());
-            return -EAGAIN;
-        }
-    }
-    
-    page_table_entry * childPT = get_PT(childTask);
-    
-    page_table_entry * parentPT = get_PT(actualTask);
-    
-    for (pag=0;pag<NUM_PAG_KERNEL+NUM_PAG_CODE;pag++){
-        set_ss_pag(childPT, pag, get_frame(parentPT, pag));
-    }
-    
-    for (pag=0; pag<NUM_PAG_DATA; pag++) {
-        set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
-        set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag, ph_pages[pag]);
-        copy_data(
-                  (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)*PAGE_SIZE,
-                  (NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag)*PAGE_SIZE,
-                  PAGE_SIZE
-                  );
-        del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag);
-    }
-    
-    set_cr3(actualTask->dir_pages_baseAddr);
-    
     childTask->PID = pids;
     ++pids;
     
-    unsigned int ebp;
-    __asm__(
-            "movl %%ebp, %0" :
-            "=r" (ebp)
-            );
+    childUnion->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
+    childUnion->stack[KERNEL_STACK_SIZE-19] = 0;
+    childUnion->task.pointer = &tsku_fill->stack[KERNEL_STACK_SIZE-19];
+    childUnion->stack[KERNEL_STACK_SIZE-5] = function;
+    childUnion->stack[KERNEL_STACK_SIZE-2] = stack;
     
-    unsigned int dif = (ebp-(unsigned int)&actualUnion->stack[0])/4;
-    childUnion->stack[dif] = &ret_from_fork;
-    childUnion->stack[dif-1] = 0;
-    childTask->kernel_esp = &(childUnion->stack[dif-1]);
+    childUnion->task.info_key.toread = 0;
+    childUnion->task.info_key.buffer =  NULL;
+    childUnion->task.PID = PID;
+    childUnion->task.estat = ST_READY;
     
     list_add_tail(&(childTask->list),&readyqueue);
     
