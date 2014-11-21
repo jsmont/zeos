@@ -64,7 +64,7 @@ int allocate_DIR(struct task_struct *t)
     return 1;
 }
 
-int get_DIR(struct task_struct *t)
+int search_DIR(struct task_struct *t)
 {
     int ini, tsk;
     ini = (int)((page_table_entry*) &dir_pages[0]);

@@ -145,6 +145,8 @@ int sys_fork() {
     childUnion->stack[dif] = &ret_from_fork;
     childUnion->stack[dif-1] = 0;
     childTask->kernel_esp = &(childUnion->stack[dif-1]);
+    
+    cont_dir[search_DIR(&childUnion->task)] = 1;
 
     list_add_tail(&(childTask->list),&readyqueue);
 
@@ -168,8 +170,8 @@ void sys_exit() {
             sys_sem_destroy(i);
         }
     }
-    --cont_dir[get_DIR(current())];
-    if (cont_dir[get_DIR(current())] <= 0) {
+    --cont_dir[search_DIR(current())];
+    if (cont_dir[search_DIR(current())] <= 0) {
         free_user_pages(current());
     }
 
@@ -253,6 +255,7 @@ int sys_clone(void (*funcion)(void), void *stack){
     
     childTask->PID = pids;
     ++pids;
+    ++cont_dir[search_DIR(&childUnion->task)];
     
     childUnion->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
     childUnion->stack[KERNEL_STACK_SIZE-19] = 0;
