@@ -145,8 +145,8 @@ int sys_fork() {
     childUnion->stack[dif] = &ret_from_fork;
     childUnion->stack[dif-1] = 0;
     childTask->kernel_esp = &(childUnion->stack[dif-1]);
-    
-    cont_dir[search_DIR(&childTask)] = 1;
+
+    cont_dir[search_DIR(childTask)] = 1;
 
     list_add_tail(&(childTask->list),&readyqueue);
 
@@ -232,36 +232,36 @@ int sys_write(int fd, char* buffer, int size)
 
 int sys_clone(void (*funcion)(void), void *stack){
     update_stats_user_to_system(current());
-    
+
     //Comprovacions de seguretat
     if (!access_ok(VERIFY_WRITE, stack,4) || !access_ok(VERIFY_READ, funcion, 4)){
         update_stats_user_to_system(current());
         return -EFAULT;
     }
-    
+
     //Comprovem si hi ha processos disponibles
     if(list_empty(&freequeue)) {
         update_stats_system_to_user(current());
         return -ENOMEM;
     }
-    
+
     //Creem la nova tasca
     union task_union * actualUnion = (union task_union *) current();
-    
+
     struct list_head * e = list_first( &freequeue );
     struct task_struct * childTask = list_head_to_task_struct(e);
-    
+
     list_del(e);
-    
-    
+
+
     union task_union * childUnion = (union task_union *) childTask;
     copy_data(actualUnion, childUnion, sizeof(union task_union));
-    
+
     //Assignem el nou PID i incrementem el contador del directori
     childTask->PID = pids;
     ++pids;
     ++cont_dir[search_DIR(current())];
-    
+
     int current_ebp;
     __asm__ __volatile__(
                          "mov %%ebp,%0;"
@@ -269,31 +269,31 @@ int sys_clone(void (*funcion)(void), void *stack){
                          );
     unsigned int pos_ebp = ((unsigned int)current_ebp-(unsigned int)current())/4;
 
-    
+
     //
     childUnion->task.kernel_esp = (unsigned int)&childUnion->stack[pos_ebp];
     /* @ retorn estàndard: Restore ALL + iret */
     childUnion->stack[pos_ebp+1] = (unsigned int)&ret_from_fork;
     /* Modificació del ebp amb la @ de la stack */
     childUnion->stack[pos_ebp+7] = (unsigned int)stack;
-    
+
     // |	eip	|
     // |	es	|
     // |eflags|
     // |	esp	|
     // |	ss	|
-    
+
     /* Modificació del registre eip que restaurarà el iret */
     childUnion->stack[pos_ebp+13] = (unsigned int)funcion;
     /* Modificació del registre esp per fer a la @stack: push   %ebp 	*/
     childUnion->stack[pos_ebp+16] = (unsigned int)stack;
-    
+
     list_add_tail(&(childTask->list),&readyqueue);
-    
+
     reset_stats(childTask);
-    
+
     update_stats_system_to_user(current());
-    
+
     return childTask->PID;
 }
 
@@ -341,7 +341,7 @@ int sys_sem_signal(int n_sem) {
     struct sem_struct * s = &semaphore[n_sem];
     if(s->owner < 0)
         return -EINVAL;
-    
+
     if(list_empty(&s->blocked)) {
         s->count++;
     }else{
