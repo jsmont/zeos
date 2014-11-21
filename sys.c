@@ -175,6 +175,7 @@ void sys_exit() {
         free_user_pages(current());
     }
 
+    current()->PID = -1;
 
     schedule_from_exit();
 }
@@ -271,9 +272,13 @@ int sys_clone(void (*funcion)(void), void *stack){
 
 
     //
-    childUnion->task.kernel_esp = (unsigned int)&childUnion->stack[pos_ebp];
+    childUnion->task.kernel_esp = (unsigned int)&childUnion->stack[pos_ebp-1];
+
+    childUnion->stack[pos_ebp-1] = 0;
+
+
     /* @ retorn estàndard: Restore ALL + iret */
-    childUnion->stack[pos_ebp+1] = (unsigned int)&ret_from_fork;
+    childUnion->stack[pos_ebp] = (unsigned int)&ret_from_fork;
     /* Modificació del ebp amb la @ de la stack */
     childUnion->stack[pos_ebp+7] = (unsigned int)stack;
 
