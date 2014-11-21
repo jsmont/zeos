@@ -233,16 +233,19 @@ int sys_write(int fd, char* buffer, int size)
 int sys_clone(void (*funcion)(void), void *stack){
     update_stats_user_to_system(current());
     
+    //Comprovacions de seguretat
     if (!access_ok(VERIFY_WRITE, stack,4) || !access_ok(VERIFY_READ, funcion, 4)){
         update_stats_user_to_system(current());
         return -EFAULT;
     }
     
+    //Comprovem si hi ha processos disponibles
     if(list_empty(&freequeue)) {
         update_stats_system_to_user(current());
         return -ENOMEM;
     }
     
+    //Creem la nova tasca
     union task_union * actualUnion = (union task_union *) current();
     
     struct list_head * e = list_first( &freequeue );
@@ -250,16 +253,18 @@ int sys_clone(void (*funcion)(void), void *stack){
     
     list_del(e);
     
+    
     union task_union * childUnion = (union task_union *) childTask;
     copy_data(actualUnion, childUnion, sizeof(union task_union));
     
+    //Assignem el nou PID i incrementem el contador del directori
     childTask->PID = pids;
     ++pids;
-    ++cont_dir[search_DIR(&childTask)];
+    ++cont_dir[search_DIR(current())];
     
+    //
     childUnion->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
     childUnion->stack[KERNEL_STACK_SIZE-19] = 0;
-    //    childUnion->task.pointer = &childUnion->stack[KERNEL_STACK_SIZE-19];
     childUnion->stack[KERNEL_STACK_SIZE-5] = funcion;
     childUnion->stack[KERNEL_STACK_SIZE-2] = stack;
     
