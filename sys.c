@@ -260,7 +260,7 @@ int sys_clone(void (*funcion)(void), void *stack){
     childUnion->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
     childUnion->stack[KERNEL_STACK_SIZE-19] = 0;
     //    childUnion->task.pointer = &childUnion->stack[KERNEL_STACK_SIZE-19];
-    childUnion->stack[KERNEL_STACK_SIZE-5] = function;
+    childUnion->stack[KERNEL_STACK_SIZE-5] = funcion;
     childUnion->stack[KERNEL_STACK_SIZE-2] = stack;
     
     list_add_tail(&(childTask->list),&readyqueue);
