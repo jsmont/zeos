@@ -10,6 +10,3 @@ build
 system
 user
 bootsect
-!libjp1.a
-!libjp2.a
-!libjpsemaphores.a
