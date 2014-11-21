@@ -271,7 +271,7 @@ int sys_clone(void (*funcion)(void), void *stack){
 
     
     //
-    childUnion->task.kernel_esp = (unsigned int)&new_stack->stack[pos_ebp];
+    childUnion->task.kernel_esp = (unsigned int)&childUnion->stack[pos_ebp];
     /* @ retorn estàndard: Restore ALL + iret */
     childUnion->stack[pos_ebp+1] = (unsigned int)&ret_from_fork;
     /* Modificació del ebp amb la @ de la stack */
@@ -284,7 +284,7 @@ int sys_clone(void (*funcion)(void), void *stack){
     // |	ss	|
     
     /* Modificació del registre eip que restaurarà el iret */
-    childUnion->stack[pos_ebp+13] = (unsigned int)function;
+    childUnion->stack[pos_ebp+13] = (unsigned int)funcion;
     /* Modificació del registre esp per fer a la @stack: push   %ebp 	*/
     childUnion->stack[pos_ebp+16] = (unsigned int)stack;
     
