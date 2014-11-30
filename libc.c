@@ -261,3 +261,23 @@ int sem_destroy(int n_sem) {
     }
     return out;
 }
+
+void *sbrk(int increment) {
+    void * out;
+    __asm__ (
+        "pushl %%ebx;"
+        "movl $45, %%eax;"
+        "movl %1, %%ebx;"
+        "int $0x80;"
+        "movl %%eax, %0;"
+        "popl %%ebx;"
+        :"=r" (out)
+        :"r" (increment)
+        :"%eax"
+        );
+    if(out<0) {
+        seterrno(-(int)out);
+        out = -1;
+    }
+    return out;
+}

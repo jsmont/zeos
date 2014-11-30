@@ -382,3 +382,49 @@ int sys_sem_destroy(int n_sem) {
         return -EPERM;
     }
 }
+
+// aun no ha salido el jpp de sbrk!
+void *sys_sbrk(int increment) {
+    struct task_struct * actualTask = current();
+    unsigned int actualBreak = actualTask->program_break;
+    if(increment>0) {
+        // asignamos espacio.
+        unsigned int actualPage = (actualBreak) >> PAGE_SIZE; // pagina actual
+        unsigned int finalPage = (actualBreak+increment) >> PAGE_SIZE; // pagina después del incremento
+        int ph_pages[finalPage-actualPage];
+        int i;
+        for (i = actualPage+1; i <= finalPage; ++i) { // reservamos las páginas!
+            ph_pages[i]=alloc_frame();
+            if(ph_pages[i]==-1) {
+                int j;
+                for (j = i-1; j >= 0; --j) {
+                    free_frame(ph_pages[j]);
+                }
+                // retornar error
+            }
+        }
+        // reservadas, queda asignarlas
+        page_table_entry * actualPT = get_PT(actualTask);
+        for (i = actualPage; i < finalPage; ++i) {
+            set_ss_pag(actualPT, i, ph_pages[i]);
+        }
+        actualTask->program_break = actualBreak+increment;
+        return actualBreak; // devolvemos a partir de donde hemos asignado
+    }else if(increment<0) {
+        // al revés
+        unsigned int actualPage = (actualBreak) >> PAGE_SIZE; // pagina actual
+        unsigned int finalPage = (actualBreak+increment) >> PAGE_SIZE; // pagina después del incremento
+        page_table_entry * actualPT = get_PT(actualTask);
+        int i;
+        for (i = actualPage; i > finalPage; --i) {
+            unsigned int frame = get_frame(actualPT, i);
+            free_frame(frame);
+            del_ss_pag(actualPT, i);
+        }
+        actualTask->program_break = actualBreak+increment;
+        return actualBreak; // devolvemos antiguo break
+    }else{
+        // devolvemos pointer actual
+        return actualBreak;
+    }
+}
