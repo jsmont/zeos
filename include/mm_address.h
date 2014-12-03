@@ -12,6 +12,10 @@
 #define NUM_PAG_DATA 20
 #define PAGE_SIZE 0x1000
 
+#define L_USER_HEAP_START ((PAG_LOG_INIT_DATA_P0+NUM_PAG_DATA)*PAGE_SIZE)
+#define L_USER_HEAP_P0 (L_USER_HEAP_START>>12)
+#define MAX_HEAP_PAGES 64
+
 /* Memory distribution */
 /***********************/
 

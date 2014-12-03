@@ -135,7 +135,7 @@ int get_stats(int pid, struct stats * s) {
     return out;
 }
 
-void itoa(int a, char *b)
+void itoa(int a, char * b)
 {
     int i, i1;
     char c;

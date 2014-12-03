@@ -235,6 +235,15 @@ void free_user_pages( struct task_struct *task )
         free_frame(process_PT[PAG_LOG_INIT_DATA_P0+pag].bits.pbase_addr);
         process_PT[PAG_LOG_INIT_DATA_P0+pag].entry = 0;
     }
+
+    unsigned int startPage = L_USER_HEAP_P0;
+    unsigned int actualBreak = task->program_break;
+    unsigned int finalPage = actualBreak >> 12;
+
+    for (pag = startPage; pag <= finalPage; pag++){
+        free_frame(process_PT[pag].bits.pbase_addr);
+        process_PT[pag].entry = 0;
+    }
 }
 
 

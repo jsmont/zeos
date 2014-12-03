@@ -96,10 +96,14 @@ int sys_fork() {
 
     allocate_DIR(childTask);
 
+    unsigned int actualBreak = actualTask->program_break;
+    int actualPage = (actualBreak) >> 12;
+    int nHeapPages = actualPage-L_USER_HEAP_P0+1;
+    int totalPages = NUM_PAG_DATA+nHeapPages;
+
     int pag;
-    int new_ph_pag;
-    int ph_pages[NUM_PAG_DATA];
-    for (pag=0;pag<NUM_PAG_DATA;pag++){
+    int ph_pages[totalPages];
+    for (pag=0;pag<totalPages;pag++){
         ph_pages[pag]=alloc_frame();
         if(ph_pages[pag]==-1) {
             int i;
@@ -112,87 +116,26 @@ int sys_fork() {
     }
 
     page_table_entry * childPT = get_PT(childTask);
-
     page_table_entry * parentPT = get_PT(actualTask);
 
+    /* kernel + código */
     for (pag=0;pag<NUM_PAG_KERNEL+NUM_PAG_CODE;pag++){
         set_ss_pag(childPT, pag, get_frame(parentPT, pag));
     }
 
-    // heap
-
-    unsigned int actualBreak = actualTask->program_break;
-    unsigned int actualPage = (actualBreak) >> PAGE_SIZE;
-    int heapStartPage = NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA;
-
-    if(actualBreak==0) { // no hay pbreak
-        for (pag=0; pag<NUM_PAG_DATA; pag++) {
-            set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
-            set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA, ph_pages[pag]);
-            copy_data(
-                (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)*PAGE_SIZE,
-                (NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA)*PAGE_SIZE,
-                PAGE_SIZE
-                );
-            del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA);
-            set_cr3(actualTask->dir_pages_baseAddr);
-        }
-    }else{
-        for (pag=0; pag<NUM_PAG_DATA; pag++) {
-            set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
-            set_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1), ph_pages[pag]);
-            copy_data(
-                (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)*PAGE_SIZE,
-                (heapStartPage+(actualPage-heapStartPage+1))*PAGE_SIZE,
-                PAGE_SIZE
-                );
-            del_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1));
-            set_cr3(actualTask->dir_pages_baseAddr);
-        }
-    }
-
-    // heap
-
-    /*for (pag=0; pag<NUM_PAG_DATA; pag++) {
+    /* datos + heap */
+    for (pag=0; pag<totalPages; pag++) {
         set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
-        set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag, ph_pages[pag]);
+        set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+totalPages+pag, ph_pages[pag]);
         copy_data(
             (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)*PAGE_SIZE,
-            (NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag)*PAGE_SIZE,
+            (NUM_PAG_KERNEL+NUM_PAG_CODE+totalPages+pag)*PAGE_SIZE,
             PAGE_SIZE
             );
-        del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag);
-    }*/
-
-    if(actualBreak!=0) {
-        // heap
-        int ph_pages2[actualPage-heapStartPage+1];
-        int i;
-        for (i = heapStartPage; i <= actualPage; ++i) { // reservamos las páginas!
-            ph_pages2[i]=alloc_frame();
-            if(ph_pages2[i]==-1) {
-                int j;
-                for (j = i-1; j >= 0; --j) {
-                    free_frame(ph_pages2[j]);
-                }
-                // retornar error
-            }
-        }
-        // reservadas, queda asignarlas
-        for (i = heapStartPage; i <= actualPage; ++i) {
-            set_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1), ph_pages2[i]);
-            set_ss_pag(childPT, i, ph_pages2[i]);
-            copy_data(
-                i*PAGE_SIZE,
-                (heapStartPage+(actualPage-heapStartPage+1))*PAGE_SIZE,
-                PAGE_SIZE
-                );
-            del_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1));
-            set_cr3(actualTask->dir_pages_baseAddr);
-        }
-        // fin heap
+        del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+totalPages+pag);
     }
 
+    set_cr3(actualTask->dir_pages_baseAddr);
 
     childTask->PID = pids;
     ++pids;
@@ -446,15 +389,31 @@ int sys_sem_destroy(int n_sem) {
 }
 
 void *sys_sbrk(int increment) {
+
     struct task_struct * actualTask = current();
+    page_table_entry * actualPT = get_PT(actualTask);
+
+    if(actualTask->program_break==0) { // ups
+        int frame = alloc_frame();
+        if(frame==-1) {
+            free_frame(frame);
+            return -EAGAIN;
+        }
+        set_ss_pag(actualPT, L_USER_HEAP_P0, frame);
+        actualTask->program_break = L_USER_HEAP_START;
+    }
+
     unsigned int actualBreak = actualTask->program_break;
     if(increment>0) {
         // asignamos espacio.
-        unsigned int actualPage = (actualBreak) >> PAGE_SIZE; // pagina actual
-        unsigned int finalPage = (actualBreak+increment) >> PAGE_SIZE; // pagina después del incremento
+        unsigned int actualPage = (actualBreak) >> 12; // pagina actual heap
+        unsigned int finalPage = (actualBreak+increment) >> 12; // pagina heap después del incremento
+        if(finalPage-L_USER_HEAP_P0 > MAX_HEAP_PAGES) // solo dejamos 64 paginas de heap max.
+            return -1;
+
         int ph_pages[finalPage-actualPage];
         int i;
-        for (i = actualPage+1; i <= finalPage; ++i) { // reservamos las páginas!
+        for (i = 0; i < finalPage-actualPage; ++i) { // reservamos las páginas!
             ph_pages[i]=alloc_frame();
             if(ph_pages[i]==-1) {
                 int j;
@@ -465,17 +424,20 @@ void *sys_sbrk(int increment) {
             }
         }
         // reservadas, queda asignarlas
-        page_table_entry * actualPT = get_PT(actualTask);
-        for (i = actualPage; i < finalPage; ++i) {
-            set_ss_pag(actualPT, i, ph_pages[i]);
+        for (i = 0; i < finalPage-actualPage; ++i) {
+            set_ss_pag(actualPT, actualPage+1+i, ph_pages[i]);
         }
         actualTask->program_break = actualBreak+increment;
         return actualBreak; // devolvemos a partir de donde hemos asignado
     }else if(increment<0) {
-        // al revés
-        unsigned int actualPage = (actualBreak) >> PAGE_SIZE; // pagina actual
-        unsigned int finalPage = (actualBreak+increment) >> PAGE_SIZE; // pagina después del incremento
-        page_table_entry * actualPT = get_PT(actualTask);
+        unsigned int actualPage = (actualBreak) >> 12; // pagina actual
+        unsigned int finalPage = (actualBreak+increment) >> 12; // pagina después del incremento
+
+        if(finalPage < L_USER_HEAP_P0) { // se pasa de frenada
+            actualTask->program_break = L_USER_HEAP_START;
+            return -EINVAL;
+        }
+
         int i;
         for (i = actualPage; i > finalPage; --i) {
             unsigned int frame = get_frame(actualPT, i);
@@ -484,7 +446,7 @@ void *sys_sbrk(int increment) {
         }
         actualTask->program_break = actualBreak+increment;
         return actualBreak; // devolvemos antiguo break
-    }else{
+    }else if(increment==0){
         // devolvemos pointer actual
         return actualBreak;
     }
