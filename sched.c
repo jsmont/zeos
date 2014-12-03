@@ -95,6 +95,8 @@ void init_idle (void)
     tu->stack[KERNEL_STACK_SIZE-1] = &cpu_idle;
 
     idle_task->kernel_esp = (unsigned int) & (tu->stack[KERNEL_STACK_SIZE-2]);
+
+    idle_task->program_break = 0;
     cont_dir[search_DIR(idle_task)] = 1;
 
     set_quantum(idle_task,1);
@@ -117,6 +119,7 @@ void init_task1(void)
     tss.esp0 = &(tu->stack[KERNEL_STACK_SIZE]);
     set_cr3(get_DIR(init_task));
 
+    idle_task->program_break = 0;
     cont_dir[search_DIR(init_task)] = 1;
     set_quantum(init_task,10);
 

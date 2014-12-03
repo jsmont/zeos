@@ -119,7 +119,41 @@ int sys_fork() {
         set_ss_pag(childPT, pag, get_frame(parentPT, pag));
     }
 
-    for (pag=0; pag<NUM_PAG_DATA; pag++) {
+    // heap
+
+    unsigned int actualBreak = actualTask->program_break;
+    unsigned int actualPage = (actualBreak) >> PAGE_SIZE;
+    int heapStartPage = NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA;
+
+    if(actualBreak==0) { // no hay pbreak
+        for (pag=0; pag<NUM_PAG_DATA; pag++) {
+            set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
+            set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA, ph_pages[pag]);
+            copy_data(
+                (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)*PAGE_SIZE,
+                (NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA)*PAGE_SIZE,
+                PAGE_SIZE
+                );
+            del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA);
+            set_cr3(actualTask->dir_pages_baseAddr);
+        }
+    }else{
+        for (pag=0; pag<NUM_PAG_DATA; pag++) {
+            set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
+            set_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1), ph_pages[pag]);
+            copy_data(
+                (NUM_PAG_KERNEL+NUM_PAG_CODE+pag)*PAGE_SIZE,
+                (heapStartPage+(actualPage-heapStartPage+1))*PAGE_SIZE,
+                PAGE_SIZE
+                );
+            del_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1));
+            set_cr3(actualTask->dir_pages_baseAddr);
+        }
+    }
+
+    // heap
+
+    /*for (pag=0; pag<NUM_PAG_DATA; pag++) {
         set_ss_pag(childPT, NUM_PAG_KERNEL+NUM_PAG_CODE+pag, ph_pages[pag]);
         set_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag, ph_pages[pag]);
         copy_data(
@@ -128,9 +162,37 @@ int sys_fork() {
             PAGE_SIZE
             );
         del_ss_pag(parentPT, NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+pag);
+    }*/
+
+    if(actualBreak!=0) {
+        // heap
+        int ph_pages2[actualPage-heapStartPage+1];
+        int i;
+        for (i = heapStartPage; i <= actualPage; ++i) { // reservamos las páginas!
+            ph_pages2[i]=alloc_frame();
+            if(ph_pages2[i]==-1) {
+                int j;
+                for (j = i-1; j >= 0; --j) {
+                    free_frame(ph_pages2[j]);
+                }
+                // retornar error
+            }
+        }
+        // reservadas, queda asignarlas
+        for (i = heapStartPage; i <= actualPage; ++i) {
+            set_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1), ph_pages2[i]);
+            set_ss_pag(childPT, i, ph_pages2[i]);
+            copy_data(
+                i*PAGE_SIZE,
+                (heapStartPage+(actualPage-heapStartPage+1))*PAGE_SIZE,
+                PAGE_SIZE
+                );
+            del_ss_pag(parentPT, heapStartPage+(actualPage-heapStartPage+1));
+            set_cr3(actualTask->dir_pages_baseAddr);
+        }
+        // fin heap
     }
 
-    set_cr3(actualTask->dir_pages_baseAddr);
 
     childTask->PID = pids;
     ++pids;
@@ -383,7 +445,6 @@ int sys_sem_destroy(int n_sem) {
     }
 }
 
-// aun no ha salido el jpp de sbrk!
 void *sys_sbrk(int increment) {
     struct task_struct * actualTask = current();
     unsigned int actualBreak = actualTask->program_break;
@@ -400,7 +461,7 @@ void *sys_sbrk(int increment) {
                 for (j = i-1; j >= 0; --j) {
                     free_frame(ph_pages[j]);
                 }
-                // retornar error
+                return -EAGAIN;
             }
         }
         // reservadas, queda asignarlas
