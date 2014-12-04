@@ -9,12 +9,17 @@
 #include <mm_address.h>
 #include <sched.h>
 
- 
+
 #define FREE_FRAME 0
 #define USED_FRAME 1
 /* Bytemap to mark the free physical pages */
 extern Byte phys_mem[TOTAL_PAGES];
 
+struct heap_struct {
+  unsigned int program_break;
+  struct list_head tasks;
+};
+extern struct heap_struct heap_structs[NR_TASKS];
 
 extern page_table_entry dir_pages[NR_TASKS][TOTAL_PAGES];
 
@@ -23,10 +28,11 @@ int alloc_frame( void );
 void free_frame( unsigned int frame );
 void set_user_pages( struct task_struct *task );
 
+int search_DIR(struct task_struct *t);
 
 extern Descriptor  *gdt;
 
-extern TSS         tss; 
+extern TSS         tss;
 
 void init_mm();
 void set_cr3(page_table_entry *dir);

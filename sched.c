@@ -64,14 +64,6 @@ int allocate_DIR(struct task_struct *t)
     return 1;
 }
 
-int search_DIR(struct task_struct *t)
-{
-    int ini, tsk;
-    ini = (int)((page_table_entry*) &dir_pages[0]);
-    tsk = (int)t->dir_pages_baseAddr;
-    return (tsk - ini)/sizeof(dir_pages[0]);
-}
-
 void cpu_idle(void)
 {
     __asm__ __volatile__("sti": : :"memory");
@@ -96,7 +88,7 @@ void init_idle (void)
 
     idle_task->kernel_esp = (unsigned int) & (tu->stack[KERNEL_STACK_SIZE-2]);
 
-    idle_task->program_break = 0;
+    updateProgramBreakAllProcesses(0,idle_task);
     cont_dir[search_DIR(idle_task)] = 1;
 
     set_quantum(idle_task,1);
@@ -119,7 +111,7 @@ void init_task1(void)
     tss.esp0 = &(tu->stack[KERNEL_STACK_SIZE]);
     set_cr3(get_DIR(init_task));
 
-    idle_task->program_break = 0;
+    updateProgramBreakAllProcesses(0,init_task);
     cont_dir[search_DIR(init_task)] = 1;
     set_quantum(init_task,10);
 

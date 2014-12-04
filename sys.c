@@ -96,7 +96,7 @@ int sys_fork() {
 
     allocate_DIR(childTask);
 
-    unsigned int actualBreak = actualTask->program_break;
+    unsigned int actualBreak = heap_structs[search_DIR(current())].program_break;
     int actualPage = (actualBreak) >> 12;
     int nHeapPages = actualPage-L_USER_HEAP_P0+1;
     int totalPages = NUM_PAG_DATA+nHeapPages;
@@ -152,6 +152,11 @@ int sys_fork() {
     childTask->kernel_esp = &(childUnion->stack[dif-1]);
 
     cont_dir[search_DIR(childTask)] = 1;
+
+    list_add_tail(
+        &(childTask->list),
+        &heap_structs[search_DIR(childTask)].tasks
+    );
 
     list_add_tail(&(childTask->list),&readyqueue);
 
@@ -267,6 +272,11 @@ int sys_clone(void (*funcion)(void), void *stack){
     childTask->PID = pids;
     ++pids;
     ++cont_dir[search_DIR(current())];
+
+    list_add_tail(
+        &(childTask->list),
+        &heap_structs[search_DIR(childTask)].tasks
+    );
 
     int current_ebp;
     __asm__ __volatile__(
@@ -393,17 +403,19 @@ void *sys_sbrk(int increment) {
     struct task_struct * actualTask = current();
     page_table_entry * actualPT = get_PT(actualTask);
 
-    if(actualTask->program_break==0) { // ups
+    unsigned int actualBreak = heap_structs[search_DIR(current())].program_break;
+
+    if(actualBreak==0) { // ups
         int frame = alloc_frame();
         if(frame==-1) {
             free_frame(frame);
             return -EAGAIN;
         }
         set_ss_pag(actualPT, L_USER_HEAP_P0, frame);
-        actualTask->program_break = L_USER_HEAP_START;
+        updateProgramBreakAllProcesses(L_USER_HEAP_START, actualTask);
     }
 
-    unsigned int actualBreak = actualTask->program_break;
+    actualBreak = heap_structs[search_DIR(current())].program_break;
     if(increment>0) {
         // asignamos espacio.
         unsigned int actualPage = (actualBreak) >> 12; // pagina actual heap
@@ -427,14 +439,14 @@ void *sys_sbrk(int increment) {
         for (i = 0; i < finalPage-actualPage; ++i) {
             set_ss_pag(actualPT, actualPage+1+i, ph_pages[i]);
         }
-        actualTask->program_break = actualBreak+increment;
+        updateProgramBreakAllProcesses(actualBreak+increment, actualTask);
         return actualBreak; // devolvemos a partir de donde hemos asignado
     }else if(increment<0) {
         unsigned int actualPage = (actualBreak) >> 12; // pagina actual
         unsigned int finalPage = (actualBreak+increment) >> 12; // pagina después del incremento
 
         if(finalPage < L_USER_HEAP_P0) { // se pasa de frenada
-            actualTask->program_break = L_USER_HEAP_START;
+            updateProgramBreakAllProcesses(L_USER_HEAP_START, actualTask);
             return -EINVAL;
         }
 
@@ -444,7 +456,7 @@ void *sys_sbrk(int increment) {
             free_frame(frame);
             del_ss_pag(actualPT, i);
         }
-        actualTask->program_break = actualBreak+increment;
+        updateProgramBreakAllProcesses(actualBreak+increment, actualTask);
         return actualBreak; // devolvemos antiguo break
     }else if(increment==0){
         // devolvemos pointer actual

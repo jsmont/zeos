@@ -26,7 +26,6 @@ struct task_struct {
   unsigned int kernel_esp;
   unsigned int quantum;
   struct stats statistics;
-  unsigned int program_break;
 };
 
 struct sem_struct {

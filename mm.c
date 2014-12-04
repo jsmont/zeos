@@ -10,6 +10,29 @@
 
 Byte phys_mem[TOTAL_PAGES];
 
+struct heap_struct heap_structs[NR_TASKS];
+
+void init_heap_structs() {
+    int i;
+    for (i = 0; i < NR_TASKS; ++i) {
+       heap_structs[i].program_break = 0;
+       INIT_LIST_HEAD(&heap_structs[i].tasks);
+    }
+}
+
+int search_DIR(struct task_struct *t)
+{
+    int ini, tsk;
+    ini = (int)((page_table_entry*) &dir_pages[0]);
+    tsk = (int)t->dir_pages_baseAddr;
+    return (tsk - ini)/sizeof(dir_pages[0]);
+}
+
+// sets to 'newProgramBreak' the program break of all processes whose page directory is the same that 'process' task
+void updateProgramBreakAllProcesses(unsigned int newProgramBreak, struct task_struct * task) {
+    heap_structs[(search_DIR(task))].program_break = newProgramBreak;
+}
+
 /* SEGMENTATION */
 /* Memory segements description table */
 Descriptor  *gdt = (Descriptor *) GDT_START;
@@ -136,6 +159,7 @@ void init_mm()
     init_table_pages();
     init_frames();
     init_dir_pages();
+    init_heap_structs();
     allocate_DIR(&task[0].task);
     set_cr3(get_DIR(&task[0].task));
     set_pe_flag();
@@ -237,7 +261,7 @@ void free_user_pages( struct task_struct *task )
     }
 
     unsigned int startPage = L_USER_HEAP_P0;
-    unsigned int actualBreak = task->program_break;
+    unsigned int actualBreak = heap_structs[search_DIR(task)].program_break;
     unsigned int finalPage = actualBreak >> 12;
 
     for (pag = startPage; pag <= finalPage; pag++){
