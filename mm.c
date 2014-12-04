@@ -16,7 +16,6 @@ void init_heap_structs() {
     int i;
     for (i = 0; i < NR_TASKS; ++i) {
        heap_structs[i].program_break = 0;
-       INIT_LIST_HEAD(&heap_structs[i].tasks);
     }
 }
 

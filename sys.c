@@ -97,9 +97,11 @@ int sys_fork() {
     allocate_DIR(childTask);
 
     unsigned int actualBreak = heap_structs[search_DIR(current())].program_break;
-    int actualPage = (actualBreak) >> 12;
+    unsigned int actualPage = (actualBreak) >> 12;
     int nHeapPages = actualPage-L_USER_HEAP_P0+1;
-    int totalPages = NUM_PAG_DATA+nHeapPages;
+    if(nHeapPages<0) // heap no inicializado
+        nHeapPages = 0;
+    unsigned int totalPages = NUM_PAG_DATA+nHeapPages;
 
     int pag;
     int ph_pages[totalPages];
@@ -153,10 +155,7 @@ int sys_fork() {
 
     cont_dir[search_DIR(childTask)] = 1;
 
-    list_add_tail(
-        &(childTask->list),
-        &heap_structs[search_DIR(childTask)].tasks
-    );
+    updateProgramBreakAllProcesses(actualBreak,childTask);
 
     list_add_tail(&(childTask->list),&readyqueue);
 
@@ -272,11 +271,6 @@ int sys_clone(void (*funcion)(void), void *stack){
     childTask->PID = pids;
     ++pids;
     ++cont_dir[search_DIR(current())];
-
-    list_add_tail(
-        &(childTask->list),
-        &heap_structs[search_DIR(childTask)].tasks
-    );
 
     int current_ebp;
     __asm__ __volatile__(

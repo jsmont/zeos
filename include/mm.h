@@ -17,7 +17,6 @@ extern Byte phys_mem[TOTAL_PAGES];
 
 struct heap_struct {
   unsigned int program_break;
-  struct list_head tasks;
 };
 extern struct heap_struct heap_structs[NR_TASKS];
 
