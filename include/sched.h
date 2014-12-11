@@ -13,9 +13,11 @@
 #define NR_TASKS            10
 #define NR_SEMAPHORES       20
 #define KERNEL_STACK_SIZE	1024
+#define BUFFER_SIZE 40
 
 struct list_head freequeue;
 struct list_head readyqueue;
+struct list_head keyboardqueue;
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
@@ -25,6 +27,7 @@ struct task_struct {
   struct list_head list;
   unsigned int kernel_esp;
   unsigned int quantum;
+  unsigned int read_pending;
   struct stats statistics;
 };
 
@@ -38,6 +41,14 @@ union task_union {
   struct task_struct task;
   unsigned long stack[KERNEL_STACK_SIZE];    /* pila de sistema, per procés */
 };
+
+struct circular_buffer {
+    char * start;
+    char * end;
+    char buffer[BUFFER_SIZE];
+};
+
+extern struct circular_buffer buffer;
 
 extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
@@ -92,5 +103,11 @@ void update_stats_system_to_ready();
 void update_stats_ready_to_system();
 
 void reset_stats(struct task_struct *t);
+
+/*Gestió de buffer*/
+int buffer_size();
+void push(char c);
+char pop();
+void pop_i(int size);
 
 #endif  /* __SCHED_H__ */

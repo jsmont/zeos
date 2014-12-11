@@ -457,3 +457,100 @@ void *sys_sbrk(int increment) {
         return actualBreak;
     }
 }
+
+int sys_read_keyboard(char * buf, int count)
+{
+    stats_current_user_to_system();
+    
+    current()->read_pending = count;
+    
+    if (!list_empty(&keyboardqueue))
+    {
+        struct list_head * elem = &current()->list;
+        list_del(elem);
+        list_add_tail(elem, &keyboardqueue);
+        current()->state = ST_BLOCKED;
+        stats_current_system_to_blocked();
+        sched_next_rr();
+    }
+    
+    int current_read = 0;
+    unsigned int * current_count = &current()->read_pending;
+    
+    while (*current_count > 0)
+    {
+        {
+            if (buffer.start > buffer.end)
+            {
+                int len_a = &buffer.buffer[BUFFER_SIZE] - buffer.start;
+                if (copy_to_user(buffer.start, buf + current_read, len_a) < 0)
+                {
+                    stats_current_system_to_user();
+                    return -1;
+                }
+
+                *current_count -= len_a;
+                current_read += len_a;
+                
+                
+
+                int len_b = buffer.end - &buffer.buffer[0];
+                char * start = &buffer.buffer[0];
+                if (copy_to_user(start, buf + len_a + current_read, len_b) < 0)
+                {
+                    stats_current_system_to_user();
+                    return -1;
+                }
+                *current_count -= len_b;
+                current_read += len_b;
+                
+                pop_i(len_a + len_b);
+            }
+            
+            else
+            {
+                int size = buffer_size();
+                if (copy_to_user(buffer.start, buf + current_read, size) < 0)
+                {
+                    stats_current_system_to_user();
+                    return -1;
+                }
+                pop_i(size);
+                *current_count -= size;
+                current_read += size;
+            }
+        
+        if (*current_count > 0)
+        {
+            struct list_head * elem = &current()->list;
+            list_del(elem);
+            list_add_tail(elem, &keyboardqueue);
+            current()->state = ST_BLOCKED;
+            stats_current_system_to_blocked();
+            sched_next_rr();
+        }
+        
+    }
+    stats_current_system_to_user();
+    return current_read;
+}
+
+int sys_read(int fd, char * buf,int count)
+{
+    stats_current_user_to_system();
+    
+    int ch_fd =check_fd(fd, ESCRIPTURA);
+    
+    if (ch_fd < 0)
+    {
+        stats_current_system_to_user();
+        return ch_fd;
+    }
+    if (count < 0)
+    {
+        stats_current_system_to_user();
+        return -EINVAL;
+    }
+    
+    return sys_read_keyboard(buf, count);
+}

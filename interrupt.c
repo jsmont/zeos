@@ -100,13 +100,40 @@ void clock_routine() {
 void keyboard_routine()
 {
     update_stats_user_to_system(current());
-    unsigned char c = inb(0x60);
-    if (!(c&0x80)) c = char_map[c&0x7f];
-    else return;
-    if (c) {
-        printc_xy(0,0,c);
-    }else{
-        printc_xy(0,0,'C');
+    
+    unsigned char input = inb(0x60);
+    unsigned char is_break = input >> 7;
+    unsigned char scan_code = input & 0x7F;
+    if (!is_break)
+    {
+        unsigned char key_char = ' ';
+        if (scan_code < 128)
+        {
+            key_char = char_map[scan_code];
+        }
+        
+        if(buffer_size() < BUFFER_SIZE)
+        {
+            push(key_char);
+        }
+    
+        
+        if(!list_empty(&keyboardqueue))
+        {
+            struct task_struct * to_unblock = list_head_to_task_struct(list_first(&keyboardqueue));
+            int last_size_request = to_unblock->read_pending;
+
+            
+            if (last_size_request <= buffer_size() || buffer_size() >= BUFFER_SIZE/2 || buffer.end == &buffer.buffer[BUFFER_SIZE])
+            {
+                struct list_head * elem = &to_unblock->list;
+                list_del(elem);
+                list_add_tail(elem, &readyqueue);
+                to_unblock->state = ST_READY;
+                stats_update_blocked_to_system(&to_unblock->stats);
+                //sched_next_rr();
+            }    
+        }
     }
     update_stats_system_to_user(current());
 }

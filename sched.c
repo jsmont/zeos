@@ -306,3 +306,58 @@ void reset_stats(struct task_struct * t) {
     actualStats->total_trans = 0; /* Number of times the process has got the CPU: READY->RUN transitions */
     actualStats->remaining_ticks = 0;
 }
+
+
+int buffer_size()
+{
+    int size = 0;
+    if (buffer.start < buffer.end)
+    {
+        size = buffer.end - buffer.start;
+    }
+    else if (buffer.start > buffer.end)
+    {
+        size = &buffer.buffer[BUFFER_SIZE] - buffer.start;
+        size += buffer.end - &buffer.buffer[0];
+        
+        //size = BUFFER_SIZE - (buffer.start - buffer.end);
+    }
+    return size;
+}
+
+void push(char c)
+{
+    if (buffer.end == &buffer.buffer[BUFFER_SIZE])
+    {
+        buffer.end = &buffer.buffer[0];
+    }
+    
+    *buffer.end = c;
+    buffer.end++;
+}
+
+char pop()
+{
+    char c = NULL;
+    if (buffer_size() != 0)
+    {
+        if (buffer.start == &buffer.buffer[BUFFER_SIZE])
+        {
+            buffer.start = &buffer.buffer[0];
+        }
+        c = *buffer.start;
+        buffer.start++;
+    }
+    return c;
+}
+
+
+void pop_i(int len)
+{
+    int remaining = len;
+    while (buffer_size() != 0 && remaining > 0)
+    {
+        pop();
+        remaining--;
+    }
+}
