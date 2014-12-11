@@ -529,20 +529,15 @@ int sys_read_keyboard(char * buf, int count)
     return current_read;
 }
 
-int sys_read(int fd, char * buf,int count)
-{
-    stats_current_user_to_system();
-    
+int sys_read(int fd, char * buf,int count){
     int ch_fd =check_fd(fd, ESCRIPTURA);
     
     if (ch_fd < 0)
     {
-        stats_current_system_to_user();
         return ch_fd;
     }
     if (count < 0)
     {
-        stats_current_system_to_user();
         return -EINVAL;
     }
     
