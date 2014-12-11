@@ -13,6 +13,8 @@ struct task_struct *init_task;
 struct sem_struct semaphores[NR_SEMAPHORES];
 struct sem_struct *semaphore = &semaphores[0];
 
+struct circular_buffer buffer;
+
 unsigned int tics;
 int cont_dir[NR_TASKS];
 
