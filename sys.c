@@ -528,7 +528,7 @@ int sys_read_keyboard(char * buf, int count)
 }
 
 int sys_read(int fd, char * buf,int count){
-    int ch_fd =check_fd(fd, ESCRIPTURA);
+    int ch_fd = check_fd(fd, ESCRIPTURA);
     
     if (ch_fd < 0)
     {
