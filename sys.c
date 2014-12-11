@@ -533,7 +533,7 @@ int sys_read(int fd, char * buf,int count){
     
     if (ch_fd < 0)
     {
-        return ch_fd;
+        return -ch_fd;
     }
     if (count < 0)
     {
