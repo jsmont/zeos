@@ -31,7 +31,7 @@ SYSOBJ = interrupt.o entry.o sys_call_table.o io.o sched.o sys.o mm.o devices.o 
 LIBZEOS = -L. -l zeos -l auxjp
 
 #add to USROBJ the object files required to complete the user program
-USROBJ = libc.o errno.o libjpsbrk.a
+USROBJ = libc.o errno.o libjpread.a
 # añadir libjpsemaphores.a para testear semáforos, libjpclone.a para sys_clone.
 # libjp2.a => jpp del E1.final
 
