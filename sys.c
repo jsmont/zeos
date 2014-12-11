@@ -23,7 +23,7 @@ int pids = 2;
 int check_fd(int fd, int permissions)
 {
     if (fd!=1) return -9; /*EBADF*/
-    if (permissions!=ESCRIPTURA) return -13; /*EACCES*/
+    if (permissions!=ESCRIPTURA && permissions!=LECTURA) return -13; /*EACCES*/
     return 0;
 }
 
@@ -533,7 +533,7 @@ int sys_read(int fd, char * buf,int count){
     
     if (ch_fd < 0)
     {
-        return -ch_fd;
+        return ch_fd;
     }
     if (count < 0)
     {
