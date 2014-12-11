@@ -129,8 +129,6 @@ void keyboard_routine()
                 struct list_head * elem = &to_unblock->list;
                 list_del(elem);
                 list_add_tail(elem, &readyqueue);
-                to_unblock->state = ST_READY;
-                stats_update_blocked_to_system(&to_unblock->stats);
                 //sched_next_rr();
             }    
         }
