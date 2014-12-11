@@ -22,8 +22,9 @@ int pids = 2;
 
 int check_fd(int fd, int permissions)
 {
-    if (fd!=1) return -9; /*EBADF*/
-    if (permissions!=ESCRIPTURA && permissions!=LECTURA) return -13; /*EACCES*/
+    if ((fd != 0) && (fd != 1)) return -9;
+    if ((fd == 0) && (permissions != LECTURA)) return -13;
+    if ((fd == 1) && (permissions!=ESCRIPTURA)) return -13; /*EACCES*/
     return 0;
 }
 
