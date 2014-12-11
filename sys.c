@@ -468,8 +468,6 @@ int sys_read_keyboard(char * buf, int count)
         struct list_head * elem = &current()->list;
         list_del(elem);
         list_add_tail(elem, &keyboardqueue);
-        current()->state = ST_BLOCKED;
-        stats_current_system_to_blocked();
         sched_next_rr();
     }
     
