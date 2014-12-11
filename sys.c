@@ -460,7 +460,6 @@ void *sys_sbrk(int increment) {
 
 int sys_read_keyboard(char * buf, int count)
 {
-    stats_current_user_to_system();
     
     current()->read_pending = count;
     
@@ -485,7 +484,6 @@ int sys_read_keyboard(char * buf, int count)
                 int len_a = &buffer.buffer[BUFFER_SIZE] - buffer.start;
                 if (copy_to_user(buffer.start, buf + current_read, len_a) < 0)
                 {
-                    stats_current_system_to_user();
                     return -1;
                 }
 
@@ -498,7 +496,7 @@ int sys_read_keyboard(char * buf, int count)
                 char * start = &buffer.buffer[0];
                 if (copy_to_user(start, buf + len_a + current_read, len_b) < 0)
                 {
-                    stats_current_system_to_user();
+
                     return -1;
                 }
                 *current_count -= len_b;
@@ -512,7 +510,6 @@ int sys_read_keyboard(char * buf, int count)
                 int size = buffer_size();
                 if (copy_to_user(buffer.start, buf + current_read, size) < 0)
                 {
-                    stats_current_system_to_user();
                     return -1;
                 }
                 pop_i(size);
@@ -525,13 +522,10 @@ int sys_read_keyboard(char * buf, int count)
             struct list_head * elem = &current()->list;
             list_del(elem);
             list_add_tail(elem, &keyboardqueue);
-            current()->state = ST_BLOCKED;
-            stats_current_system_to_blocked();
             sched_next_rr();
         }
         
     }
-    stats_current_system_to_user();
     return current_read;
 }
 
