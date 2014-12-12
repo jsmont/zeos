@@ -460,57 +460,56 @@ int sys_read_keyboard(char * buf, int count)
     while (*current_count > 0)
     {
         printc_xy(1, 22, 'B');
-        {
-            if(buffer_size() == *current_count){
+        
+        if(buffer_size() == *current_count){
+            
+            printc_xy(2, 22, 'C');
+            if (copy_to_user(buffer.start, buf + current_read, *current_count) < 0)
+            {
+                return -1;
+            }
+            
+            pop_i(*current_count);
+            
+            *current_count -= *current_count;
+            current_read += *current_count;
+            return current_read;
+        }
+        else {
+            if (BUFFER_SIZE == buffer_size())
+            {
                 
-                printc_xy(2, 22, 'C');
-                if (copy_to_user(buffer.start, buf + current_read, *current_count) < 0)
+                printc_xy(3, 22, 'A');
+                if (copy_to_user(buffer.start, buf + current_read, BUFFER_SIZE) < 0)
                 {
                     return -1;
                 }
                 
-                pop_i(*current_count);
+                *current_count -= BUFFER_SIZE;
+                current_read += BUFFER_SIZE;
                 
-                *current_count -= *current_count;
-                current_read += *current_count;
-                return current_read;
-            }
-            else {
-                if (BUFFER_SIZE == buffer_size())
-                {
-                    
-                    printc_xy(3, 22, 'A');
-                    if (copy_to_user(buffer.start, buf + current_read, BUFFER_SIZE) < 0)
-                    {
-                        return -1;
-                    }
-                    
-                    *current_count -= BUFFER_SIZE;
-                    current_read += BUFFER_SIZE;
-                    
-                    pop_i(BUFFER_SIZE);
-                    
-                }
+                pop_i(BUFFER_SIZE);
                 
-                printc_xy(4, 22, 'B');
-                struct list_head * elem = &current()->list;
-                list_del(elem);
-                list_add_tail(elem, &keyboardqueue);
-                sched_next_rr();
-                /*
-                 
-                 else
-                 {
-                 int size = buffer_size();
-                 if (copy_to_user(buffer.start, buf + current_read, size) < 0)
-                 {
-                 return -1;
-                 }
-                 pop_i(size);
-                 *current_count -= size;
-                 current_read += size;
-                 }*/
             }
+            
+            printc_xy(4, 22, 'B');
+            struct list_head * elem = &current()->list;
+            list_del(elem);
+            list_add_tail(elem, &keyboardqueue);
+            sched_next_rr();
+            /*
+             
+             else
+             {
+             int size = buffer_size();
+             if (copy_to_user(buffer.start, buf + current_read, size) < 0)
+             {
+             return -1;
+             }
+             pop_i(size);
+             *current_count -= size;
+             current_read += size;
+             }*/
         }
         
     }
@@ -526,6 +525,5 @@ int sys_read(int fd, char * buf,int count){
     if (count < 0) return -EINVAL;
     if (count == 0) return -ENODEV;
     else {
-        printc_xy(0, 22, 'B');
         return sys_read_keyboard(buf,count);
     }}
