@@ -282,7 +282,7 @@ void *sbrk(int increment) {
     return out;
 }
 
-int read(int fd, char * buf, int count)
+int read(int fd, char * buffer, int size)
 {
     int out;
     __asm__ (
