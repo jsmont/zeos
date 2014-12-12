@@ -526,5 +526,6 @@ int sys_read(int fd, char * buf,int count){
     if (count < 0) return -EINVAL;
     if (count == 0) return -ENODEV;
     else {
+        printc_xy(0, 22, 'B');
         return sys_read_keyboard(buf,count);
     }}
