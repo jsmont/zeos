@@ -301,6 +301,13 @@ int read(int fd, char * buffer, int size)
              :"%eax"
              );
     if(out<0) {
+        
+        printc_xy(0, 22, '-');
+        if (out < -9){
+            printc_xy(1, 22, (-out)/10 + 48);
+            printc_xy(2, 22, (-out)%10 + 48);
+        }
+        else printc_xy(1, 22, (-out) + 48);
         seterrno(-out);
         out = -1;
     }
