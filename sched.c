@@ -373,3 +373,20 @@ void pop_i(int len)
         remaining--;
     }
 }
+
+void debug_buffer(){
+    
+    printc_xy(2,22,'\n');
+    printc_xy(2,22,'[');
+    for(int i = 0; i < BUFFER_SIZE; ++i){
+        
+        printc_xy(2,22,buffer.buffer[i]);
+        
+        printc_xy(2,22,',');
+    }
+    
+    printc_xy(2,22,']');
+    
+    printc_xy(2,22,'\n');
+    
+}

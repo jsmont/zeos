@@ -460,6 +460,7 @@ int sys_read_keyboard(char * buf, int count)
     
     while (*current_count > 0)
     {
+        debug_buffer()
         printc_xy(1, 22, 'B');
         
         if(buffer_size() == *current_count){
@@ -473,7 +474,7 @@ int sys_read_keyboard(char * buf, int count)
             pop_i(*current_count);
             
             current_read += *current_count;
-            *current_count = 0;
+            *current_count -= *current_count;
         }
         else {
             if (BUFFER_SIZE == buffer_size())
