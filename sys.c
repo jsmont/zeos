@@ -449,6 +449,7 @@ int sys_read_keyboard(char * buf, int count)
     
     if (!list_empty(&keyboardqueue))
     {
+        printc_xy(1, 22, 'T');
         update_process_state_rr(current(), &keyboardqueue);
         printc_xy(1, 22, 'X');
         sched_next_rr();
@@ -491,9 +492,7 @@ int sys_read_keyboard(char * buf, int count)
             }
             
             printc_xy(4, 22, 'B');
-            struct list_head * elem = &current()->list;
-            list_del(elem);
-            list_add_tail(elem, &keyboardqueue);
+            update_process_state_rr(current(), &keyboardqueue);
             sched_next_rr();
             /*
              
