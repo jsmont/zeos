@@ -46,6 +46,7 @@ int sys_getpid()
 
 int sys_get_stats(int pid, struct stats *st)
 {
+    printc_xy(1,1,'G');
     if(!access_ok(VERIFY_WRITE,st,sizeof(struct stats)))
         return -EFAULT;
     if(pid<0)
