@@ -22,8 +22,8 @@ int pids = 2;
 
 int check_fd(int fd, int permissions)
 {
-    printc_xy(2, 22, fd+48);
-    printc_xy(3, 22, permissions+48);
+/*    printc_xy(2, 22, fd+48);
+    printc_xy(3, 22, permissions+48);*/
     if ((fd != 0) && (fd != 1)) return -9;
     if ((fd == 0) && (permissions != LECTURA)) return -13;
     if ((fd == 1) && (permissions!=ESCRIPTURA)) return -13; /*EACCES*/

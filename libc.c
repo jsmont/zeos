@@ -284,18 +284,25 @@ void *sbrk(int increment) {
 
 int read(int fd, char * buf, int count)
 {
-    int rvalue = 0;
-    
-    __asm__ __volatile__ (
-        "int $0x80\n\t"
-        : "=a" (rvalue)
-        : "b" (fd), "c" (buf), "d" (count), "a" (0x03)
-    );
-    
-    if (rvalue < 0)
-    {
-        errno = rvalue * -1;
-        rvalue = -1;
+    int out;
+    __asm__ (
+             "pushl %%ebx;"
+             "movl $3, %%eax;"
+             "movl %1, %%ebx;"
+             "movl %2, %%ecx;"
+             "movl %3, %%edx;"
+             "int $0x80;"
+             "movl %%eax, %0;"
+             "popl %%ebx;"
+             :"=r" (out)
+             :"r" (fd)
+             ,"r" (buffer)
+             ,"r" (size)
+             :"%eax"
+             );
+    if(out<0) {
+        seterrno(-out);
+        out = -1;
     }
-    return rvalue;
+    return out;
 }
