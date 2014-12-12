@@ -443,9 +443,9 @@ void *sys_sbrk(int increment) {
 int sys_read_keyboard(char * buf, int count)
 {
     
+    printc_xy(0, 22, 'B');
     current()->read_pending = count;
     
-    printc_xy(0, 22, 'B');
     
     if (!list_empty(&keyboardqueue))
     {
