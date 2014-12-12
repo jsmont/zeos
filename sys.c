@@ -522,7 +522,7 @@ int sys_read(int fd, char * buf,int count){
     
     if(check_fd(fd,LECTURA) != 0) return -EBADF;
     if (buf == NULL) return -EFAULT;
-    if (!access_ok(VERIFY_WRITE, buf,&count)) return -EFAULT;
+    if (!access_ok(VERIFY_WRITE, buf,count)) return -EFAULT;
     if (count < 0) return -EINVAL;
     if (count == 0) return -ENODEV;
     else {
