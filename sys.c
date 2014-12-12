@@ -452,17 +452,18 @@ int sys_read_keyboard(char * buf, int count)
         list_add_tail(elem, &keyboardqueue);
         sched_next_rr();
     }
+    printc_xy(0, 22, 'B');
     
     int current_read = 0;
     unsigned int * current_count = &current()->read_pending;
     
     while (*current_count > 0)
     {
-         printc_xy(0, 22, 'B');
+        printc_xy(1, 22, 'B');
         {
             if(buffer_size() == *current_count){
                 
-                printc_xy(1, 22, 'C');
+                printc_xy(2, 22, 'C');
                 if (copy_to_user(buffer.start, buf + current_read, *current_count) < 0)
                 {
                     return -1;
@@ -478,7 +479,7 @@ int sys_read_keyboard(char * buf, int count)
                 if (BUFFER_SIZE == buffer_size())
                 {
                     
-                    printc_xy(2, 22, 'A');
+                    printc_xy(3, 22, 'A');
                     if (copy_to_user(buffer.start, buf + current_read, BUFFER_SIZE) < 0)
                     {
                         return -1;
@@ -491,7 +492,7 @@ int sys_read_keyboard(char * buf, int count)
                     
                 }
                 
-                printc_xy(3, 22, 'B');
+                printc_xy(4, 22, 'B');
                 struct list_head * elem = &current()->list;
                 list_del(elem);
                 list_add_tail(elem, &keyboardqueue);
