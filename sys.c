@@ -454,6 +454,7 @@ int sys_read_keyboard(char * buf, int count)
         list_add_tail(elem, &keyboardqueue);
         sched_next_rr();
     }
+    printc_xy(0, 22, 'A');
     int current_read = 0;
     unsigned int * current_count = &current()->read_pending;
     
