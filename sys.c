@@ -445,6 +445,8 @@ int sys_read_keyboard(char * buf, int count)
     
     current()->read_pending = count;
     
+    printc_xy(0, 22, 'B');
+    
     if (!list_empty(&keyboardqueue))
     {
         struct list_head * elem = &current()->list;
@@ -452,8 +454,6 @@ int sys_read_keyboard(char * buf, int count)
         list_add_tail(elem, &keyboardqueue);
         sched_next_rr();
     }
-    printc_xy(0, 22, 'B');
-    
     int current_read = 0;
     unsigned int * current_count = &current()->read_pending;
     
