@@ -449,8 +449,7 @@ int sys_read_keyboard(char * buf, int count)
     
     if (!list_empty(&keyboardqueue))
     {
-        struct task_struct * cur = current();
-        struct list_head * elem = &(*current).list;
+        struct list_head * elem = &(*current()).list;
         printc_xy(0, 22, 'v');
 /*        list_del(elem);*/
         printc_xy(0, 22, 'e');
