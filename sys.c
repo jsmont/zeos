@@ -532,14 +532,13 @@ int sys_read_keyboard(char * buf, int count)
 }
 
 int sys_read(int fd, char * buf,int count){
-    int size_original = count;
     int check = check_fd(fd, LECTURA);
     
     if(check_fd(fd,LECTURA) != 0) return -EBADF;
-    if (buffer == NULL) return -EFAULT;
-    if (!access_ok(VERIFY_WRITE, buffer,count)) return -EFAULT;
+    if (buf == NULL) return -EFAULT;
+    if (!access_ok(VERIFY_WRITE, buf,count)) return -EFAULT;
     if (count < 0) return -EINVAL;
     if (count == 0) return -ENODEV;
     else {
-        return sys_read_keyboard(buffer,count);
+        return sys_read_keyboard(buf,count);
     }}
