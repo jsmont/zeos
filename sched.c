@@ -142,6 +142,13 @@ void init_sem(){
     }
 }
 
+void init_keyboard() {
+    INIT_LIST_HEAD(&keyboardqueue);
+
+        buffer.end = &buffer.buffer[0];
+        buffer.start = &buffer.buffer[0];
+}
+
 struct task_struct* current()
 {
     int ret_value;
@@ -321,7 +328,7 @@ int buffer_size()
     {
         size = &buffer.buffer[BUFFER_SIZE] - buffer.start;
         size += buffer.end - &buffer.buffer[0];
-        
+
         //size = BUFFER_SIZE - (buffer.start - buffer.end);
     }
     return size;
@@ -329,13 +336,16 @@ int buffer_size()
 
 void push(char c)
 {
+//printc_xy(1, 22, 'P');
     if (buffer.end == &buffer.buffer[BUFFER_SIZE])
     {
         buffer.end = &buffer.buffer[0];
     }
-    
+
     *buffer.end = c;
+printc_xy(1, 22, *buffer.end);
     buffer.end++;
+//printc_xy(1, 22, 'E');
 }
 
 char pop()
