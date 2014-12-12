@@ -480,7 +480,6 @@ int sys_read_keyboard(char * buf, int count)
             printc_xy(1,11,'E');
             if (buffer_size()==BUFFER_SIZE)
             {
-                
                 printc_xy(3, 22, 'A');
                 if (copy_to_user(buffer.start, buf + current_read, BUFFER_SIZE) < 0)
                 {

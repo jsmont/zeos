@@ -45,6 +45,7 @@ union task_union {
 struct circular_buffer {
     char * start;
     char * end;
+    char size;
     char buffer[BUFFER_SIZE];
 };
 

@@ -147,6 +147,7 @@ void init_keyboard() {
 
         buffer.end = &buffer.buffer[0];
         buffer.start = &buffer.buffer[0];
+        buffer.size = 0;
 }
 
 struct task_struct* current()
@@ -319,19 +320,7 @@ void reset_stats(struct task_struct * t) {
 
 int buffer_size()
 {
-    int size = 0;
-    if (buffer.start < buffer.end)
-    {
-        size = buffer.end - buffer.start;
-    }
-    else if (buffer.start > buffer.end)
-    {
-        size = &buffer.buffer[BUFFER_SIZE] - buffer.start;
-        size += buffer.end - &buffer.buffer[0];
-
-        //size = BUFFER_SIZE - (buffer.start - buffer.end);
-    }
-    return size;
+    return buffer.size;
 }
 
 void push(char c)
@@ -345,6 +334,7 @@ void push(char c)
     *buffer.end = c;
 printc_xy(1, 22, *buffer.end);
     buffer.end++;
+    buffer.size++;
 //printc_xy(1, 22, 'E');
 }
 
@@ -360,6 +350,7 @@ char pop()
         c = *buffer.start;
         buffer.start++;
     }
+    buffer.size--;
     return c;
 }
 
