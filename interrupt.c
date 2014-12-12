@@ -99,29 +99,42 @@ void clock_routine() {
 }
 
 void keyboard_routine() {
+    
       unsigned char c = inb(0x60);
       if (((c & 0x80) == 0)) {
             char cc = char_map[c&0x7f];
             if (cc !='\0') {
-                  procesKey(cc);
+                  addKey(cc);
             } else {
-                  procesKey('C');
+                  addKey('C');
             }
       }
       else {
-            procesKey('E');
+            addKey('E');
       }
 }
 
-void procesKey(char c) {
+void addKey(char c) {
+    
     if (KEYBOARDBUFFER_SIZE > nextKey) {
+    
+        //If there's some space on the buffer we add the new char.
+        
         keyboardbuffer[(firstKey + nextKey)%KEYBOARDBUFFER_SIZE] = c;
         ++nextKey;
     }
+    
+    
     if (!list_empty(&keyboardqueue)) {
+        
+        //If we have any blocked process we awake it in order to make him read the new data available.
+        
             struct list_head * lh = list_first(&keyboardqueue);
             struct task_struct *tsk = list_head_to_task_struct(lh);
             list_del(lh);
             list_add_tail(lh, &readyqueue);
+        
+        /* There's no need to reblock him here, he will reblock itself if he doesn't fill
+         his requested bytes on the sys_read. */
         }
 }

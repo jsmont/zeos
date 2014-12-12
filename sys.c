@@ -488,17 +488,21 @@ int sys_read_keyboard(char * buffer, int count) {
     struct task_struct * curr = current();
     curr->info_key.toread = count;
     curr->info_key.buffer = buffer;
+    
     if (list_empty(&keyboardqueue)) {
         if (count <= nextKey) {
+            
+            //If we have enough readed chars to fill the request.
+            
             int tmp = minim(KEYBOARDBUFFER_SIZE - firstKey, count);
-            check = copy_to_user(&keyboardbuffer[firstKey], buffer, tmp);
+            check = copy_to_user(&keyboardbuffer[firstKey], buffer, tmp); //Copy the bytes from firstKey to the end of the Array
             if (check < 0) {
                 update_stats_system_to_user(curr);
                 return check;
             }
             nextKey -= tmp;
             firstKey = (firstKey + tmp)%KEYBOARDBUFFER_SIZE;
-            check = copy_to_user(&keyboardbuffer[firstKey], &buffer[tmp], count - tmp);
+            check = copy_to_user(&keyboardbuffer[firstKey], &buffer[tmp], count - tmp); //Copy the bytes from the begginning of the array to the end of data.
             if (check < 0) {
                 update_stats_system_to_user(curr);
                 return check;
@@ -511,7 +515,13 @@ int sys_read_keyboard(char * buffer, int count) {
             curr->info_key.buffer =  NULL;
         }
         else {
+            
+            //If we don't have enough data...
+            
             while (curr->info_key.toread > 0) {
+                
+                //We copy the available data (using the same procedure as before)
+                
                 int tmp = minim(KEYBOARDBUFFER_SIZE - firstKey, nextKey);
                 tmp = minim(tmp, curr->info_key.toread);
                 check = copy_to_user(&keyboardbuffer[firstKey], curr->info_key.buffer, tmp);
@@ -532,8 +542,13 @@ int sys_read_keyboard(char * buffer, int count) {
                 nextKey = nextKey - tmp;
                 firstKey = (firstKey + tmp2)%KEYBOARDBUFFER_SIZE;
                 
+                //We refresh the process info
+                
                 curr->info_key.toread -= tmp;
                 curr->info_key.buffer = &(curr->info_key.buffer[tmp]);
+                
+                //We add the task_head to the keyboard blocked queue
+                
                 update_process_state_rr(curr, &keyboardqueue);
                 sched_next_rr();
             }
@@ -541,10 +556,14 @@ int sys_read_keyboard(char * buffer, int count) {
     }
     else {
         
+        //we block the process 'til his turn to read.
+        
         curr->info_key.buffer = buffer;
         curr->info_key.toread = count;
         update_process_state_rr(curr, &keyboardqueue);
         sched_next_rr();
+        
+        //We repeat the same process we used above
         
         while (curr->info_key.toread > 0) {
             int tmp = minim(KEYBOARDBUFFER_SIZE - firstKey, nextKey);
@@ -580,6 +599,9 @@ int sys_read_keyboard(char * buffer, int count) {
 
 int sys_read(int fd, char * buf,int count){
     update_stats_user_to_system(current());
+    
+    //Security checks
+    
     int check = check_fd(fd, LECTURA);
     
     if(check_fd(fd,LECTURA) != 0) {
@@ -602,5 +624,8 @@ int sys_read(int fd, char * buf,int count){
         update_stats_system_to_user(current());
         return -ENODEV;
     }else {
+        
+        //If everything is OK
+        
         return sys_read_keyboard(buf,count);
     }}
