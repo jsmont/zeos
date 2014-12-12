@@ -477,6 +477,7 @@ int sys_read_keyboard(char * buf, int count)
             *current_count -= *current_count;
         }
         else {
+            printc_xy(1,11,'E');
             if (buffer_size()==BUFFER_SIZE)
             {
                 
