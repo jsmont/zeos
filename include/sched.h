@@ -13,7 +13,7 @@
 #define NR_TASKS            10
 #define NR_SEMAPHORES       20
 #define KERNEL_STACK_SIZE	1024
-#define BUFFER_SIZE 40
+#define BUFFER_SIZE 5
 
 struct list_head freequeue;
 struct list_head readyqueue;
