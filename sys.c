@@ -449,6 +449,7 @@ int sys_read_keyboard(char * buf, int count)
     
     if (!list_empty(&keyboardqueue))
     {
+        printc_xy(0, 22, 'v');
         struct list_head * elem = &current()->list;
         list_del(elem);
         list_add_tail(elem, &keyboardqueue);
