@@ -449,14 +449,7 @@ int sys_read_keyboard(char * buf, int count)
     
     if (!list_empty(&keyboardqueue))
     {
-        struct list_head * elem = &((*current()).list);
-        printc_xy(0, 22, 'v');
-        if(elem == NULL)        printc_xy(0, 22, 'N');
-                printc_xy(0, 22, 'n');
-        list_del(elem);
-        printc_xy(0, 22, 'e');
-        list_add_tail(elem, &keyboardqueue);
-        printc_xy(0, 22, 'f');
+        update_process_state_rr(current(), &keyboardqueue);
         sched_next_rr();
         printc_xy(0, 22, 'l');
     }
