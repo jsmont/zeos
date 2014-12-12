@@ -491,7 +491,7 @@ int sys_read_keyboard(char * buf, int count)
                     printc_xy(4, 22, *current_count/10 + 48);
                     printc_xy(5, 22, *current_count%10 + 48);
                 }
-                *current_count -= BUFFER_SIZE;
+                *current_count = *current_count - BUFFER_SIZE;
                 current_read += BUFFER_SIZE;
                 printc_xy(4, 22, '-');
                 printc_xy(4, 22, '>');
@@ -519,6 +519,12 @@ int sys_read_keyboard(char * buf, int count)
             else {
                 printc_xy(4, 22, *current_count/10 + 48);
                 printc_xy(5, 22, *current_count%10 + 48);
+            }
+            printc_xy(4, 22, '-');
+            if(current_read < 10)printc_xy(4, 22, current_read + 48);
+            else {
+                printc_xy(4, 22, current_read/10 + 48);
+                printc_xy(5, 22, current_read%10 + 48);
             }
             printc_xy(4, 22, '|');
             update_process_state_rr(current(), &keyboardqueue);
