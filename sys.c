@@ -537,7 +537,7 @@ int sys_read(int fd, char * buf,int count){
     if (ch_fd < 0)
     {
         printc_xy(0, 22, '-');
-        if (out < -9){
+        if (ch_fd < -9){
             printc_xy(1, 22, (-ch_fd)/10 + 48);
             printc_xy(2, 22, (-ch_fd)%10 + 48);
         }
