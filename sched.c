@@ -378,7 +378,8 @@ void debug_buffer(){
     
     printc_xy(2,22,'\n');
     printc_xy(2,22,'[');
-    for(int i = 0; i < BUFFER_SIZE; ++i){
+    int i;
+    for(i = 0; i < BUFFER_SIZE; ++i){
         
         printc_xy(2,22,buffer.buffer[i]);
         
