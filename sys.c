@@ -449,7 +449,7 @@ int sys_read_keyboard(char * buf, int count)
     
     if (!list_empty(&keyboardqueue))
     {
-        struct list_head * elem = &(*current()).list;
+        struct list_head * elem = &((*current()).list);
         printc_xy(0, 22, 'v');
         list_del(elem);
         printc_xy(0, 22, 'e');
@@ -478,7 +478,6 @@ int sys_read_keyboard(char * buf, int count)
             
             *current_count -= *current_count;
             current_read += *current_count;
-            return current_read;
         }
         else {
             if (BUFFER_SIZE == buffer_size())
@@ -518,6 +517,7 @@ int sys_read_keyboard(char * buf, int count)
         }
         
     }
+    return current_read;
     
 }
 
