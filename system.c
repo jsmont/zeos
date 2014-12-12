@@ -88,6 +88,8 @@ int __attribute__((__section__(".text.main")))
   init_sched();
   /* Initialize Semaphores */
   init_sem();
+  /* Initialize Keyboard */
+  init_keyboard();
   /* Initialize idle task  data */
   init_idle();
   /* Initialize task 1 data */

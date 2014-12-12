@@ -74,6 +74,8 @@ void init_sched(void);
 
 void init_sem(void);
 
+void init_keyboard(void);
+
 struct task_struct * current();
 
 void task_switch(union task_union* new);

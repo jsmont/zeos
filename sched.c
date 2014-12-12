@@ -142,6 +142,10 @@ void init_sem(){
     }
 }
 
+void init_keyboard() {
+    INIT_LIST_HEAD(&keyboardqueue);
+}
+
 struct task_struct* current()
 {
     int ret_value;
@@ -321,7 +325,7 @@ int buffer_size()
     {
         size = &buffer.buffer[BUFFER_SIZE] - buffer.start;
         size += buffer.end - &buffer.buffer[0];
-        
+
         //size = BUFFER_SIZE - (buffer.start - buffer.end);
     }
     return size;
@@ -333,7 +337,7 @@ void push(char c)
     {
         buffer.end = &buffer.buffer[0];
     }
-    
+
     *buffer.end = c;
     buffer.end++;
 }
