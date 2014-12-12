@@ -476,9 +476,9 @@ int sys_read_keyboard(char * buf, int count)
                 }
                 
                 current_read ++;
-                *current_count--;
             }
             
+            *current_count = 0;
 //            pop_i(*current_count);
             
         }
