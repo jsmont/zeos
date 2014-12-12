@@ -21,14 +21,24 @@ struct list_head keyboardqueue;
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
+
+
+extern char keyboardbuffer[512];
+extern int nextKey, firstKey;
+#define KEYBOARDBUFFER_SIZE 512
+struct infKey {
+    char *buffer;
+    int toread;
+};
+
 struct task_struct {
   int PID;			/* Process ID */
   page_table_entry * dir_pages_baseAddr;
   struct list_head list;
   unsigned int kernel_esp;
   unsigned int quantum;
-  unsigned int read_pending;
   struct stats statistics;
+  struct infKey info_key;
 };
 
 struct sem_struct {
@@ -41,15 +51,6 @@ union task_union {
   struct task_struct task;
   unsigned long stack[KERNEL_STACK_SIZE];    /* pila de sistema, per procés */
 };
-
-struct circular_buffer {
-    char * start;
-    char * end;
-    char size;
-    char buffer[BUFFER_SIZE];
-};
-
-extern struct circular_buffer buffer;
 
 extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */

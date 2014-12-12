@@ -98,40 +98,30 @@ void clock_routine() {
     update_stats_system_to_user(current());
 }
 
-void keyboard_routine()
-{
-    update_stats_user_to_system(current());
-    //printc_xy(1, 22, 'K');
-    unsigned char input = inb(0x60);
-    unsigned char is_break = input >> 7;
-    unsigned char scan_code = input & 0x7F;
-    if (!is_break)
-    {
-	//printc_xy(1, 22, 'C');
-        unsigned char key_char = ' ';
-        if (scan_code < 128)
-        {
-            key_char = char_map[scan_code];
-        }
-  //      printc_xy(1, 22, 'B');
-        if(buffer_size() < BUFFER_SIZE)
-        {
-//printc_xy(1, 22, 'B');
-            push(key_char);
+void keyboard_routine() {
+      unsigned char c = inb(0x60);
+      if (((c & 0x80) == 0)) {
+            char cc = char_map[c&0x7f];
+            if (cc !='\0') {
+                  procesKey(cc);
+            } else {
+                  procesKey('C');
+            }
+      }
+      else {
+            procesKey('E');
+      }
+}
 
-        }
-    
-  //      printc_xy(1, 22, 'B');
-        if(!list_empty(&keyboardqueue))
-        {
-//printc_xy(1, 22, 'S');
-            struct task_struct * to_unblock = list_head_to_task_struct(list_first(&keyboardqueue));
-//printc_xy(1, 22, 'S');
-	update_process_state_rr(to_unblock,&readyqueue);
-//printc_xy(1, 22, 'S');
-                //sched_next_rr();
-                
-        }
+void procesKey(char c) {
+    if (KEYBOARDBUFFER_SIZE > nextKey) {
+        keyboardbuffer[(firstKey + nextKey)%KEYBOARDBUFFER_SIZE] = c;
+        ++nextKey;
     }
-    update_stats_system_to_user(current());
+    if (!list_empty(&keyboardqueue)) {
+            struct list_head * lh = list_first(&keyboardqueue);
+            struct task_struct *tsk = list_head_to_task_struct(lh);
+            list_del(lh);
+            list_add_tail(lh, &readyqueue);
+        }
 }

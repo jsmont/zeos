@@ -13,8 +13,6 @@ struct task_struct *init_task;
 struct sem_struct semaphores[NR_SEMAPHORES];
 struct sem_struct *semaphore = &semaphores[0];
 
-struct circular_buffer buffer;
-
 unsigned int tics;
 int cont_dir[NR_TASKS];
 
@@ -144,10 +142,8 @@ void init_sem(){
 
 void init_keyboard() {
     INIT_LIST_HEAD(&keyboardqueue);
-
-        buffer.end = &buffer.buffer[0];
-        buffer.start = &buffer.buffer[0];
-        buffer.size = 0;
+    nextKey = 0;
+    firstKey = 0;
 }
 
 struct task_struct* current()
@@ -315,70 +311,4 @@ void reset_stats(struct task_struct * t) {
     actualStats->elapsed_total_ticks = get_ticks();
     actualStats->total_trans = 0; /* Number of times the process has got the CPU: READY->RUN transitions */
     actualStats->remaining_ticks = 0;
-}
-
-
-int buffer_size()
-{
-    return buffer.size;
-}
-
-void push(char c)
-{
-//printc_xy(1, 22, 'P');
-    if (buffer.end == &buffer.buffer[BUFFER_SIZE])
-    {
-        buffer.end = &buffer.buffer[0];
-    }
-
-    *buffer.end = c;
-printc_xy(1, 22, *buffer.end);
-    buffer.end++;
-    buffer.size++;
-//printc_xy(1, 22, 'E');
-}
-
-char pop()
-{
-    char c = NULL;
-    if (buffer_size() != 0)
-    {
-        if (buffer.start == &buffer.buffer[BUFFER_SIZE])
-        {
-            buffer.start = &buffer.buffer[0];
-        }
-        c = *buffer.start;
-        buffer.start++;
-    }
-    buffer.size--;
-    return c;
-}
-
-
-void pop_i(int len)
-{
-    int remaining = len;
-    while (buffer_size() != 0 && remaining > 0)
-    {
-        pop();
-        remaining--;
-    }
-}
-
-void debug_buffer(){
-    
-    printc_xy(2,22,'\n');
-    printc_xy(2,22,'[');
-    int i;
-    for(i = 0; i < BUFFER_SIZE; ++i){
-        
-        printc_xy(2,22,buffer.buffer[i]);
-        
-        printc_xy(2,22,',');
-    }
-    
-    printc_xy(2,22,']');
-    
-    printc_xy(2,22,'\n');
-    
 }

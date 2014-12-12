@@ -46,7 +46,6 @@ int sys_getpid()
 
 int sys_get_stats(int pid, struct stats *st)
 {
-    printc_xy(1,1,'G');
     if(!access_ok(VERIFY_WRITE,st,sizeof(struct stats)))
         return -EFAULT;
     if(pid<0)
@@ -296,48 +295,66 @@ int sys_clone(void (*funcion)(void), void *stack){
 
 /* sems */
 int sys_sem_init(int n_sem, unsigned int value) {
+    update_stats_user_to_system(current());
+    
     int i;
-    if(n_sem<0 || n_sem>=NR_SEMAPHORES)
+    if(n_sem<0 || n_sem>=NR_SEMAPHORES) {
+        update_stats_system_to_user(current());
         return -EINVAL;
+    }
     struct sem_struct * s = &semaphore[n_sem];
     if(s->owner<0) { // libre
         s->count = value;
         s->owner = current()->PID;
+        update_stats_system_to_user(current());
         return 0;
     }else{
+        update_stats_system_to_user(current());
         return -EBUSY;
     }
 }
 
 int sys_sem_wait(int n_sem) {
-    if(n_sem<0 || n_sem>=NR_SEMAPHORES)
+    update_stats_user_to_system(current());
+    
+    if(n_sem<0 || n_sem>=NR_SEMAPHORES) {
+        update_stats_system_to_user(current());
         return -EINVAL;
+    }
     
     struct sem_struct * s = &semaphore[n_sem];
-    if(s->owner < 0)
+    if(s->owner < 0) {
+        update_stats_system_to_user(current());
         return -EINVAL;
+    }
     
     if(s->count<=0) {
         update_process_state_rr(current(), &s->blocked);
         sched_next_rr();
-        if(s->owner<0) // se lo han cargado
+        if(s->owner<0)  {
+            update_stats_system_to_user(current());
             return -1;
+        }
     }else{
         --(s->count);
     }
-    
+    update_stats_system_to_user(current());
     return 0;
-    
 }
 
 int sys_sem_signal(int n_sem) {
+    update_stats_user_to_system(current());
     
-    if(n_sem<0 || n_sem>=NR_SEMAPHORES)
+    if(n_sem<0 || n_sem>=NR_SEMAPHORES) {
+        update_stats_system_to_user(current());
         return -EINVAL;
+    }
     
     struct sem_struct * s = &semaphore[n_sem];
-    if(s->owner < 0)
+    if(s->owner < 0) {
+        update_stats_system_to_user(current());
         return -EINVAL;
+    }
     
     if(list_empty(&s->blocked)) {
         s->count++;
@@ -346,16 +363,22 @@ int sys_sem_signal(int n_sem) {
         list_del(e);
         update_process_state_rr(list_head_to_task_struct(e), &readyqueue);
     }
+    update_stats_system_to_user(current());
     return 0;
 }
 
 int sys_sem_destroy(int n_sem) {
-    if(n_sem<0 || n_sem>=NR_SEMAPHORES)
+    update_stats_user_to_system(current());
+    if(n_sem<0 || n_sem>=NR_SEMAPHORES) {
+        update_stats_system_to_user(current());
         return -EINVAL;
+    }
     
     struct sem_struct * s = &semaphore[n_sem];
-    if(s->owner < 0)
+    if(s->owner < 0) {
+        update_stats_system_to_user(current());
         return -EINVAL;
+    }
     
     if(current()->PID == s->owner) {
         s->count = 0;
@@ -369,14 +392,16 @@ int sys_sem_destroy(int n_sem) {
                 list_add_tail(e, &readyqueue);
             }
         }
+        update_stats_system_to_user(current());
         return 0;
     }else{
+        update_stats_system_to_user(current());
         return -EPERM;
     }
 }
 
 void *sys_sbrk(int increment) {
-    
+    update_stats_user_to_system(current());
     struct task_struct * actualTask = current();
     page_table_entry * actualPT = get_PT(actualTask);
     
@@ -386,6 +411,7 @@ void *sys_sbrk(int increment) {
         int frame = alloc_frame();
         if(frame==-1) {
             free_frame(frame);
+            update_stats_system_to_user(current());
             return -EAGAIN;
         }
         set_ss_pag(actualPT, L_USER_HEAP_P0, frame);
@@ -397,8 +423,10 @@ void *sys_sbrk(int increment) {
         // asignamos espacio.
         unsigned int actualPage = (actualBreak) >> 12; // pagina actual heap
         unsigned int finalPage = (actualBreak+increment) >> 12; // pagina heap después del incremento
-        if(finalPage-L_USER_HEAP_P0 > MAX_HEAP_PAGES) // solo dejamos 64 paginas de heap max.
+        if(finalPage-L_USER_HEAP_P0 > MAX_HEAP_PAGES) { // solo dejamos 64 paginas de heap max.
+            update_stats_system_to_user(current());
             return -1;
+        }
         
         int ph_pages[finalPage-actualPage];
         int i;
@@ -409,6 +437,7 @@ void *sys_sbrk(int increment) {
                 for (j = i-1; j >= 0; --j) {
                     free_frame(ph_pages[j]);
                 }
+                update_stats_system_to_user(current());
                 return -EAGAIN;
             }
         }
@@ -417,6 +446,7 @@ void *sys_sbrk(int increment) {
             set_ss_pag(actualPT, actualPage+1+i, ph_pages[i]);
         }
         updateProgramBreakAllProcesses(actualBreak+increment, actualTask);
+        update_stats_system_to_user(current());
         return actualBreak; // devolvemos a partir de donde hemos asignado
     }else if(increment<0) {
         unsigned int actualPage = (actualBreak) >> 12; // pagina actual
@@ -424,6 +454,7 @@ void *sys_sbrk(int increment) {
         
         if(finalPage < L_USER_HEAP_P0) { // se pasa de frenada
             updateProgramBreakAllProcesses(L_USER_HEAP_START, actualTask);
+            update_stats_system_to_user(current());
             return -EINVAL;
         }
         
@@ -434,138 +465,142 @@ void *sys_sbrk(int increment) {
             del_ss_pag(actualPT, i);
         }
         updateProgramBreakAllProcesses(actualBreak+increment, actualTask);
+        update_stats_system_to_user(current());
         return actualBreak; // devolvemos antiguo break
     }else if(increment==0){
+        update_stats_system_to_user(current());
         // devolvemos pointer actual
         return actualBreak;
     }
 }
 
-int sys_read_keyboard(char * buf, int count)
-{
-    
-    printc_xy(0, 22, 'B');
-    current()->read_pending = count;
-    
-    
-    if (!list_empty(&keyboardqueue))
-    {
-        printc_xy(1, 22, 'T');
-        update_process_state_rr(current(), &keyboardqueue);
-        printc_xy(1, 22, 'X');
-        sched_next_rr();
-    }
-    printc_xy(0, 22, 'A');
-    int current_read = 0;
-    unsigned int * current_count = &current()->read_pending;
-    
-    while (*current_count > 0)
-    {
-        debug_buffer();
-        printc_xy(1, 22, 'B');
-        
-        if(buffer_size() == *current_count){
-            
-            printc_xy(2, 22, 'C');
-            int i;
-            for (i=0; i < *current_count; ++i) {
-                char a = pop();
-                if (copy_to_user(&a, buf + current_read, sizeof(char)) < 0)
-                {
-                    return -1;
-                }
-                
-                current_read ++;
-            }
-            
-            *current_count = 0;
-//            pop_i(*current_count);
-            
-        }
-        else {
-            printc_xy(1,11,'E');
-            if (buffer_size()==BUFFER_SIZE)
-            {
-                printc_xy(3, 22, 'A');
-                int i;
-                for (i=0; i <BUFFER_SIZE; ++i) {
-                    char a = pop();
-                    if (copy_to_user(&a, buf + current_read, sizeof(char)) < 0)
-                    {
-                        return -1;
-                    }
-                    
-                    current_read ++;
-                    *current_count--;
-                }
-                if(*current_count < 10)printc_xy(4, 22, *current_count + 48);
-                else {
-                    printc_xy(4, 22, *current_count/10 + 48);
-                    printc_xy(5, 22, *current_count%10 + 48);
-                }
-                printc_xy(4, 22, '-');
-                printc_xy(4, 22, '>');
-                if(*current_count < 10)printc_xy(4, 22, *current_count + 48);
-                else {
-                    printc_xy(4, 22, *current_count/10 + 48);
-                    printc_xy(5, 22, *current_count%10 + 48);
-                }
-            }
-            printc_xy(4, 22, '-');
-            if(buffer_size() < 10)printc_xy(4, 22, buffer_size() + 48);
-            else {
-                printc_xy(4, 22, buffer_size()/10 + 48);
-                printc_xy(5, 22, buffer_size()%10 + 48);
-            }
-            printc_xy(4, 22, '-');
-            if(BUFFER_SIZE < 10)printc_xy(4, 22, BUFFER_SIZE + 48);
-            else {
-                printc_xy(4, 22, BUFFER_SIZE/10 + 48);
-                printc_xy(5, 22, BUFFER_SIZE%10 + 48);
-            }
-            printc_xy(4, 22, '-');
-            if(*current_count < 10)printc_xy(4, 22, *current_count + 48);
-            else {
-                printc_xy(4, 22, *current_count/10 + 48);
-                printc_xy(5, 22, *current_count%10 + 48);
-            }
-            printc_xy(4, 22, '-');
-            if(current_read < 10)printc_xy(4, 22, current_read + 48);
-            else {
-                printc_xy(4, 22, current_read/10 + 48);
-                printc_xy(5, 22, current_read%10 + 48);
-            }
-            printc_xy(4, 22, '|');
-            update_process_state_rr(current(), &keyboardqueue);
-            sched_next_rr();
-            /*
-             
-             else
-             {
-             int size = buffer_size();
-             if (copy_to_user(buffer.start, buf + current_read, size) < 0)
-             {
-             return -1;
-             }
-             pop_i(size);
-             *current_count -= size;
-             current_read += size;
-             }*/
-        }
-        
-    }
-    return current_read;
-    
+
+int nextKey,firstKey;
+char keyboardbuffer[KEYBOARDBUFFER_SIZE];
+
+int minim(int a, int b) {
+    if (a <= b) return a;
+    return b;
 }
 
+int sys_read_keyboard(char * buffer, int count) {
+    int check;
+    struct task_struct * curr = current();
+    curr->info_key.toread = count;
+    curr->info_key.buffer = buffer;
+    if (list_empty(&keyboardqueue)) {
+        if (count <= nextKey) {
+            int tmp = minim(KEYBOARDBUFFER_SIZE - firstKey, count);
+            check = copy_to_user(&keyboardbuffer[firstKey], buffer, tmp);
+            if (check < 0) {
+                update_stats_system_to_user(curr);
+                return check;
+            }
+            nextKey -= tmp;
+            firstKey = (firstKey + tmp)%KEYBOARDBUFFER_SIZE;
+            check = copy_to_user(&keyboardbuffer[firstKey], &buffer[tmp], count - tmp);
+            if (check < 0) {
+                update_stats_system_to_user(curr);
+                return check;
+            }
+            tmp = count - tmp;
+            nextKey -= tmp;
+            firstKey = (firstKey + tmp)%KEYBOARDBUFFER_SIZE;
+            
+            curr->info_key.toread = 0;
+            curr->info_key.buffer =  NULL;
+        }
+        else {
+            while (curr->info_key.toread > 0) {
+                int tmp = minim(KEYBOARDBUFFER_SIZE - firstKey, nextKey);
+                tmp = minim(tmp, curr->info_key.toread);
+                check = copy_to_user(&keyboardbuffer[firstKey], curr->info_key.buffer, tmp);
+                if (check < 0) {
+                    update_stats_system_to_user(curr);
+                    return check;
+                }
+                nextKey -= tmp;
+                firstKey = (firstKey + tmp)%KEYBOARDBUFFER_SIZE;
+                
+                int tmp2 = min(nextKey, curr->info_key.toread - tmp);
+                check = copy_to_user(&keyboardbuffer[firstKey], &curr->info_key.buffer[tmp], tmp2);
+                if (check < 0) {
+                    update_stats_system_to_user(curr);
+                    return check;
+                }
+                tmp += tmp2;
+                nextKey = nextKey - tmp;
+                firstKey = (firstKey + tmp2)%KEYBOARDBUFFER_SIZE;
+                
+                curr->info_key.toread -= tmp;
+                curr->info_key.buffer = &(curr->info_key.buffer[tmp]);
+                update_process_state_rr(curr, &keyboardqueue);
+                sched_next_rr();
+            }
+        }
+    }
+    else {
+        
+        curr->info_key.buffer = buffer;
+        curr->info_key.toread = count;
+        update_process_state_rr(curr, &keyboardqueue);
+        sched_next_rr();
+        
+        while (curr->info_key.toread > 0) {
+            int tmp = minim(KEYBOARDBUFFER_SIZE - firstKey, nextKey);
+            tmp = minim(tmp, curr->info_key.toread);
+            check = copy_to_user(&keyboardbuffer[firstKey], curr->info_key.buffer, tmp);
+            if (check < 0)  {
+                update_stats_system_to_user(curr);
+                return check;
+            }
+            nextKey -= tmp;
+            firstKey = (firstKey + tmp)%KEYBOARDBUFFER_SIZE;
+            
+            int tmp2 = min(nextKey, curr->info_key.toread - tmp);
+            check = copy_to_user(&keyboardbuffer[firstKey], &curr->info_key.buffer[tmp], tmp2);
+            if (check < 0) {
+                update_stats_system_to_user(curr);
+                return check;
+            }
+            tmp += tmp2;
+            nextKey = nextKey - tmp;
+            firstKey = (firstKey + tmp2)%KEYBOARDBUFFER_SIZE;
+            
+            curr->info_key.toread -= tmp;
+            curr->info_key.buffer = &(curr->info_key.buffer[tmp]);
+            update_process_state_rr(curr, &keyboardqueue);
+            sched_next_rr();
+        }
+    }
+    update_stats_system_to_user(curr);
+    return count;
+}
+
+
 int sys_read(int fd, char * buf,int count){
+    update_stats_user_to_system(current());
     int check = check_fd(fd, LECTURA);
     
-    if(check_fd(fd,LECTURA) != 0) return -EBADF;
-    if (buf == NULL) return -EFAULT;
-    if (!access_ok(VERIFY_WRITE, buf,count)) return -EFAULT;
-    if (count < 0) return -EINVAL;
-    if (count == 0) return -ENODEV;
-    else {
+    if(check_fd(fd,LECTURA) != 0) {
+        update_stats_system_to_user(current());
+        return  -EBADF;
+    }
+    if (buf == NULL) {
+        update_stats_system_to_user(current());
+        return -EFAULT;
+    }
+    if (!access_ok(VERIFY_WRITE, buf,count)) {
+        update_stats_system_to_user(current());
+        return -EFAULT;
+    }
+    if (count < 0) {
+        update_stats_system_to_user(current());
+        return -EINVAL;
+    }
+    if (count == 0) {
+        update_stats_system_to_user(current());
+        return -ENODEV;
+    }else {
         return sys_read_keyboard(buf,count);
     }}

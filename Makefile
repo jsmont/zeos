@@ -32,6 +32,13 @@ LIBZEOS = -L. -l zeos -l auxjp
 
 #add to USROBJ the object files required to complete the user program
 USROBJ = libc.o errno.o libjpread.a
+# libjp1.a
+# libjp2.a
+# libjpclone.a
+# libjpsbrk.a
+# libjpsemaphores.a
+# libjpread.a
+
 # añadir libjpsemaphores.a para testear semáforos, libjpclone.a para sys_clone.
 # libjp2.a => jpp del E1.final
 
