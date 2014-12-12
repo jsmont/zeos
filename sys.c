@@ -466,13 +466,13 @@ int sys_read_keyboard(char * buf, int count)
     
     current()->read_pending = count;
     
-    if (!list_empty(&keyboardqueue))
-    {
+
+
         struct list_head * elem = &current()->list;
         list_del(elem);
         list_add_tail(elem, &keyboardqueue);
         sched_next_rr();
-    }
+
     
     int current_read = 0;
     unsigned int * current_count = &current()->read_pending;
