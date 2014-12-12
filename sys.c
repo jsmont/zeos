@@ -477,7 +477,7 @@ int sys_read_keyboard(char * buf, int count)
             *current_count -= *current_count;
         }
         else {
-            if (BUFFER_SIZE == buffer_size())
+            if (buffer_size()==BUFFER_SIZE)
             {
                 
                 printc_xy(3, 22, 'A');
@@ -506,6 +506,12 @@ int sys_read_keyboard(char * buf, int count)
             else {
                 printc_xy(4, 22, buffer_size()/10 + 48);
                 printc_xy(5, 22, buffer_size()%10 + 48);
+            }
+            printc_xy(4, 22, '-');
+            if(BUFFER_SIZE < 10)printc_xy(4, 22, BUFFER_SIZE + 48);
+            else {
+                printc_xy(4, 22, BUFFER_SIZE/10 + 48);
+                printc_xy(5, 22, BUFFER_SIZE%10 + 48);
             }
             printc_xy(4, 22, '-');
             if(*current_count < 10)printc_xy(4, 22, *current_count + 48);
