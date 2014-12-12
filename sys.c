@@ -450,8 +450,8 @@ int sys_read_keyboard(char * buf, int count)
     if (!list_empty(&keyboardqueue))
     {
         update_process_state_rr(current(), &keyboardqueue);
+        printc_xy(1, 22, 'X');
         sched_next_rr();
-        printc_xy(0, 22, 'l');
     }
     printc_xy(0, 22, 'A');
     int current_read = 0;
@@ -488,7 +488,6 @@ int sys_read_keyboard(char * buf, int count)
                 current_read += BUFFER_SIZE;
                 
                 pop_i(BUFFER_SIZE);
-                
             }
             
             printc_xy(4, 22, 'B');
