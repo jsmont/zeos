@@ -22,8 +22,8 @@ int pids = 2;
 
 int check_fd(int fd, int permissions)
 {
-/*    printc_xy(2, 22, fd+48);
-    printc_xy(3, 22, permissions+48);*/
+    /*    printc_xy(2, 22, fd+48);
+     printc_xy(3, 22, permissions+48);*/
     if ((fd != 0) && (fd != 1)) return -9;
     if ((fd == 0) && (permissions != LECTURA)) return -13;
     if ((fd == 1) && (permissions!=ESCRIPTURA)) return -13; /*EACCES*/
@@ -466,13 +466,13 @@ int sys_read_keyboard(char * buf, int count)
     
     current()->read_pending = count;
     
-
-
+    if (!list_empty(&keyboardqueue))
+    {
         struct list_head * elem = &current()->list;
         list_del(elem);
         list_add_tail(elem, &keyboardqueue);
         sched_next_rr();
-
+    }
     
     int current_read = 0;
     unsigned int * current_count = &current()->read_pending;
@@ -480,55 +480,54 @@ int sys_read_keyboard(char * buf, int count)
     while (*current_count > 0)
     {
         {
-            if (buffer.start > buffer.end)
-            {
-                int len_a = &buffer.buffer[BUFFER_SIZE] - buffer.start;
-                if (copy_to_user(buffer.start, buf + current_read, len_a) < 0)
+            if(buffer_size() == *current_count){
+                if (copy_to_user(buffer.start, buf + current_read, *current_count) < 0)
                 {
                     return -1;
                 }
                 
-                *current_count -= len_a;
-                current_read += len_a;
+                pop_i(*current_count);
                 
-                
-                
-                int len_b = buffer.end - &buffer.buffer[0];
-                char * start = &buffer.buffer[0];
-                if (copy_to_user(start, buf + len_a + current_read, len_b) < 0)
+                *current_count -= *current_count;
+                current_read += *current_count;
+                return current_read;
+            }
+            else {
+                if (BUFFER_SIZE == buffer_size())
                 {
+                    if (copy_to_user(buffer.start, buf + current_read, BUFFER_SIZE) < 0)
+                    {
+                        return -1;
+                    }
                     
-                    return -1;
+                    *current_count -= BUFFER_SIZE;
+                    current_read += BUFFER_SIZE;
+                    
+                    pop_i(BUFFER_SIZE);
+                    
                 }
-                *current_count -= len_b;
-                current_read += len_b;
-                
-                pop_i(len_a + len_b);
+                struct list_head * elem = &current()->list;
+                list_del(elem);
+                list_add_tail(elem, &keyboardqueue);
+                sched_next_rr();
+                /*
+                 
+                 else
+                 {
+                 int size = buffer_size();
+                 if (copy_to_user(buffer.start, buf + current_read, size) < 0)
+                 {
+                 return -1;
+                 }
+                 pop_i(size);
+                 *current_count -= size;
+                 current_read += size;
+                 }*/
             }
-            
-            else
-            {
-                int size = buffer_size();
-                if (copy_to_user(buffer.start, buf + current_read, size) < 0)
-                {
-                    return -1;
-                }
-                pop_i(size);
-                *current_count -= size;
-                current_read += size;
-            }
-        }
-        
-        if (*current_count > 0)
-        {
-            struct list_head * elem = &current()->list;
-            list_del(elem);
-            list_add_tail(elem, &keyboardqueue);
-            sched_next_rr();
         }
         
     }
-    return current_read;
+    
 }
 
 int sys_read(int fd, char * buf,int count){
@@ -536,7 +535,7 @@ int sys_read(int fd, char * buf,int count){
     
     if(check_fd(fd,LECTURA) != 0) return -EBADF;
     if (buf == NULL) return -EFAULT;
-    if (!access_ok(VERIFY_WRITE, buf,count)) return -EFAULT;
+    if (!access_ok(VERIFY_WRITE, buf,&count)) return -EFAULT;
     if (count < 0) return -EINVAL;
     if (count == 0) return -ENODEV;
     else {
